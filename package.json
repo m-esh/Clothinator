@@ -1,0 +1,11 @@
+{
+  "name": "clothinator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal outfit picker: weather, mood, laundry and wear tracking, all on the phone.",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "serve": "node tools/serve.js"
+  }
+}
