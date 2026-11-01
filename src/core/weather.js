@@ -60,10 +60,17 @@ export function summarize(forecast, date, from = 9, to = 17) {
   const rainMm = mm.reduce((a, b) => a + b, 0);
   const rainChance = probs.length ? Math.max(...probs) : 0;
 
+  const hours = idx.map((i) => ({
+    h: Number(h.time[i].slice(11, 13)),
+    feels: h.apparent_temperature?.[i] ?? h.temperature_2m[i],
+    wet: (h.precipitation_probability?.[i] ?? 0) >= 50 || (h.precipitation?.[i] ?? 0) >= 0.3,
+  }));
+
   return {
     date,
     from,
     to,
+    hours,
     min: Math.min(...temps),
     max: Math.max(...temps),
     feelsMin: Math.min(...feels),

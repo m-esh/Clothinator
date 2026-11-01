@@ -4,16 +4,12 @@ import { h } from './dom.js';
 import { photoURL } from '../data/store.js';
 import { stats } from '../core/catalog.js';
 import { COLOR } from '../core/color.js';
-
-const luminance = (hex) => {
-  const n = parseInt(hex.slice(1), 16);
-  return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255;
-};
+import { silhouette } from './silhouettes.js';
 
 export function itemPic(item, kind = 'thumb') {
   if (!item.hasPhoto) {
-    const hex = COLOR[item.colors?.[0]?.name]?.hex;
-    return h('div', { class: 'nophoto', style: { background: hex || 'var(--paper-3)', color: hex && luminance(hex) < 0.4 ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.55)' } }, stats(item).label);
+    const hex = COLOR[item.colors?.[0]?.name]?.hex || item.colors?.[0]?.hex;
+    return silhouette(item.type, hex, item.pattern || stats(item).pattern);
   }
   const img = h('img', { alt: item.name || '', decoding: 'async' });
   photoURL(item.id, kind).then((u) => { if (u) img.src = u; });

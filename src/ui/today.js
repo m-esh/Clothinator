@@ -8,7 +8,7 @@ import { getWeather } from '../data/weather-service.js';
 import { backupDue, exportBackup } from '../data/backup.js';
 import { suggest, alternatives, assemble, comboKey } from '../core/generate.js';
 import { evaluate, MODES, itemIds, piecesOf } from '../core/rules.js';
-import { describe, labelParts } from '../core/weather.js';
+import { describe, labelParts, toUnit } from '../core/weather.js';
 import { isoDate, isWeekend, weekModes, fancyNudge } from '../core/week.js';
 import { stats } from '../core/catalog.js';
 
@@ -69,6 +69,8 @@ export async function renderToday(root, rerender) {
   const today = isoDate();
   await loadSession(today);
   fetchWeather(today, rerender);
+  // The chosen mode colours the screen (see [data-mode] in the CSS).
+  document.documentElement.dataset.mode = S.mode || '';
 
   const items = state.items;
   const tops = items.some((i) => stats(i).cat === 'top' || stats(i).cat === 'onepiece');
@@ -101,16 +103,17 @@ export async function renderToday(root, rerender) {
   // ── mode ──
   const nudge = fancyNudge(state.wears, today, S.mode);
   root.append(h('section', null,
-    h('div', { class: 'seg', role: 'group', 'aria-label': 'Mode' },
+    h('div', { class: 'modes', role: 'group', 'aria-label': 'Mode' },
       Object.values(MODES).map((m) => h('button', {
+        class: `mode-tile mode-${m.key}`,
         'aria-pressed': String(S.mode === m.key),
         onclick: () => { if (S.mode !== m.key) { S.mode = m.key; S.custom = null; S.skip = []; saveSession(); rerender(); } },
-      }, m.label))),
+      }, h('span', { class: 'mode-dot' }), h('b', null, m.label), h('small', null, MODE_HINT[m.key])))),
     nudge && h('div', { class: 'nudge' }, nudge),
   ));
 
   if (!S.mode) {
-    root.append(h('p', { class: 'muted', style: { marginTop: '22px' } }, 'Pick how today feels. I\'ll pick the clothes.'));
+    root.append(h('p', { class: 'muted', style: { marginTop: '22px' } }, 'Pick how today feels and I\'ll pick the clothes.'));
     return;
   }
 
@@ -143,12 +146,60 @@ function header(today, rerender) {
   return h('header', { class: 'today-head' },
     h('div', { class: 'eyebrow' }, W.place ? `Today · ${W.place}` : 'Today'),
     h('h1', null, longDate(today)),
-    weather,
+    W.status === 'ok' && W.summary ? h('div', { class: 'wx-wrap' }, wxChart(W.summary, state.prefs.unit), weather) : weather,
     isWeekend(today) ? null : h('div', { class: 'week', 'aria-label': 'This week' },
       week.map((d, i) => h('div', {
         class: [d.mode, d.date === today ? 'today' : ''].filter(Boolean).join(' '),
       }, h('b', null, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][i]), h('small', null, d.mode ? MODES[d.mode].label : '—')))),
   );
+}
+
+const MODE_HINT = { fancy: 'Sharp, put together', casual: 'Easy, still right', comfy: 'Soft and relaxed' };
+
+// Feels-like temperature across your hours, rainy hours hatched.
+function wxChart(w, unit) {
+  const pts = w.hours || [];
+  if (pts.length < 2) return null;
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs) => {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    return e;
+  };
+  const W = 320, H = 96, L = 6, R = 6, T = 22, B = 22;
+  const vals = pts.map((p) => toUnit(p.feels, unit));
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi - lo < 4) { const m = (hi + lo) / 2; lo = m - 2; hi = m + 2; }
+  const x = (i) => L + (i * (W - L - R)) / (pts.length - 1);
+  const y = (v) => T + ((hi - v) * (H - T - B)) / (hi - lo);
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, class: 'wx', role: 'img', 'aria-label': `Feels like ${vals[0]}° at ${hourLabel(pts[0].h)}, ${vals[vals.length - 1]}° at ${hourLabel(pts[pts.length - 1].h)}` });
+  const defs = el('defs', {});
+  const pat = el('pattern', { id: 'wxrain', width: '6', height: '6', patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' });
+  pat.append(el('rect', { width: '2', height: '6', class: 'wx-hatch' }));
+  const grad = el('linearGradient', { id: 'wxfill', x1: '0', y1: '0', x2: '0', y2: '1' });
+  grad.append(el('stop', { offset: '0', class: 'wx-fill-top' }), el('stop', { offset: '1', class: 'wx-fill-bottom' }));
+  defs.append(pat, grad);
+  svg.append(defs);
+  const step = (W - L - R) / (pts.length - 1);
+  pts.forEach((p, i) => {
+    if (!p.wet) return;
+    const x0 = Math.max(0, x(i) - step / 2), x1 = Math.min(W, x(i) + step / 2);
+    svg.append(el('rect', { x: x0, y: T - 6, width: x1 - x0, height: H - B - T + 6, fill: 'url(#wxrain)' }));
+  });
+  const line = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  svg.append(el('path', { d: `${line} L${x(pts.length - 1)} ${H - B} L${x(0)} ${H - B} Z`, fill: 'url(#wxfill)' }));
+  svg.append(el('path', { d: line, class: 'wx-line' }));
+  svg.append(el('line', { x1: 0, x2: W, y1: H - B, y2: H - B, class: 'wx-base' }));
+  const label = (txt, px, py, anchor, cls = 'wx-t') => { const t = el('text', { x: px, y: py, 'text-anchor': anchor, class: cls }); t.textContent = txt; svg.append(t); };
+  const first = 0, last = pts.length - 1;
+  const peak = vals.indexOf(Math.max(...vals));
+  for (const i of new Set([first, peak, last])) {
+    svg.append(el('circle', { cx: x(i), cy: y(vals[i]), r: 3.2, class: 'wx-dot' }));
+    label(`${vals[i]}°`, x(i), y(vals[i]) - 8, i === first ? 'start' : i === last ? 'end' : 'middle', 'wx-v');
+  }
+  const mid = Math.round(last / 2);
+  [[first, 'start'], [mid, 'middle'], [last, 'end']].forEach(([i, a]) => label(hourLabel(pts[i].h), x(i), H - 6, a));
+  return svg;
 }
 
 const hourLabel = (x) => (x === 12 ? '12pm' : x > 12 ? `${x - 12}pm` : `${x}am`);

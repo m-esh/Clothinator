@@ -4,28 +4,37 @@
    labels (mono, uppercase, tracked). The one bold thing is cobalt, used only
    for the action you take.                                                  */
 
+/* One deliberate look: dark, always. Denim at night. */
 :root {
   /* colour */
-  --cotton: #e9ecea;     /* page: cool shirting grey, faint green bias */
-  --board: #f6f7f6;      /* where garments are laid out */
-  --board-2: #dfe3e1;    /* pressed / secondary fills */
-  --ink: #1d2331;        /* indigo-black, like raw denim dye */
-  --ink-2: #4b5363;
-  --ink-3: #7f8796;
-  --seam: #cdd2d0;       /* rules and outlines */
-  --cobalt: #2c49c9;     /* the action colour */
-  --on-cobalt: #f6f7f6;
-  --rust: #a8461b;       /* semantic: warning */
-  --moss: #3b6f52;       /* semantic: fine */
-  --scrim: rgba(15, 18, 26, 0.32);
+  --cotton: #0d111a;     /* page: indigo night (name kept from v1) */
+  --board: #161b27;      /* where garments are laid out */
+  --board-2: #202736;    /* pressed / secondary fills */
+  --ink: #ecebe6;        /* thread white */
+  --ink-2: #a9afbd;
+  --ink-3: #6f7689;
+  --seam: #262d3e;       /* stitching lines */
+  --cobalt: #8199ff;     /* default action colour */
+  --on-cobalt: #0d111a;
+  --rust: #f08c62;       /* semantic: warning */
+  --moss: #8fd1a9;       /* semantic: fine */
+  --scrim: rgba(3, 5, 10, 0.6);
+
+  /* the three moods */
+  --fancy: #e3bf72;      /* brass button */
+  --casual: #86a6ff;     /* washed denim */
+  --comfy: #c9a6ec;      /* heather */
+  --mode: var(--cobalt);
+  --on-mode: #0d111a;
+
   /* Liquid Glass: only on the floating controls layer */
-  --glass: rgba(246, 247, 246, 0.58);
-  --glass-strong: rgba(246, 247, 246, 0.9);
-  --glass-edge: rgba(255, 255, 255, 0.75);
-  --glass-hi: rgba(255, 255, 255, 0.9);
-  --glass-low: rgba(29, 35, 49, 0.06);
-  --glass-shadow: 0 10px 30px rgba(29, 35, 49, 0.14), 0 1px 3px rgba(29, 35, 49, 0.08);
-  --glass-pill: rgba(29, 35, 49, 0.08);
+  --glass: rgba(30, 36, 50, 0.55);
+  --glass-strong: rgba(28, 33, 46, 0.9);
+  --glass-edge: rgba(255, 255, 255, 0.14);
+  --glass-hi: rgba(255, 255, 255, 0.2);
+  --glass-low: rgba(0, 0, 0, 0.3);
+  --glass-shadow: 0 14px 36px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35);
+  --glass-pill: rgba(255, 255, 255, 0.1);
 
   /* type */
   --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
@@ -38,61 +47,22 @@
   --safe-t: env(safe-area-inset-top, 0px);
   --gutter-l: max(18px, env(safe-area-inset-left, 0px));
   --gutter-r: max(18px, env(safe-area-inset-right, 0px));
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --cotton: #12151c;
-    --board: #1b1f29;
-    --board-2: #262b37;
-    --ink: #e4e7ee;
-    --ink-2: #a9b0bf;
-    --ink-3: #737b8c;
-    --seam: #2d3341;
-    --cobalt: #7d93ff;
-    --on-cobalt: #10131a;
-    --rust: #e08a5e;
-    --moss: #85c29f;
-    --scrim: rgba(0, 0, 0, 0.55);
-    --glass: rgba(34, 39, 52, 0.55);
-    --glass-strong: rgba(34, 39, 52, 0.9);
-    --glass-edge: rgba(255, 255, 255, 0.14);
-    --glass-hi: rgba(255, 255, 255, 0.18);
-    --glass-low: rgba(0, 0, 0, 0.25);
-    --glass-shadow: 0 12px 34px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
-    --glass-pill: rgba(255, 255, 255, 0.1);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --cotton: #12151c;
-  --board: #1b1f29;
-  --board-2: #262b37;
-  --ink: #e4e7ee;
-  --ink-2: #a9b0bf;
-  --ink-3: #737b8c;
-  --seam: #2d3341;
-  --cobalt: #7d93ff;
-  --on-cobalt: #10131a;
-  --rust: #e08a5e;
-  --moss: #85c29f;
-  --scrim: rgba(0, 0, 0, 0.55);
-  --glass: rgba(34, 39, 52, 0.55);
-  --glass-strong: rgba(34, 39, 52, 0.9);
-  --glass-edge: rgba(255, 255, 255, 0.14);
-  --glass-hi: rgba(255, 255, 255, 0.18);
-  --glass-low: rgba(0, 0, 0, 0.25);
-  --glass-shadow: 0 12px 34px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
-  --glass-pill: rgba(255, 255, 255, 0.1);
   color-scheme: dark;
 }
+:root[data-mode="fancy"] { --mode: var(--fancy); }
+:root[data-mode="casual"] { --mode: var(--casual); }
+:root[data-mode="comfy"] { --mode: var(--comfy); }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  background: var(--cotton);
+  background-color: var(--cotton);
+  /* denim twill: fine diagonal weave, barely there */
+  background-image:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 4px),
+    radial-gradient(120% 60% at 50% -10%, rgba(129, 153, 255, 0.10), transparent 60%);
+  background-attachment: fixed;
   color: var(--ink);
   font: 400 16px/1.5 var(--body);
   font-variation-settings: "wdth" 100;
@@ -209,9 +179,9 @@ section + section { margin-top: 30px; }
 
 .btn {
   appearance: none;
-  border: 1.5px solid var(--cobalt);
-  background: var(--cobalt);
-  color: var(--on-cobalt);
+  border: 1.5px solid var(--mode);
+  background: var(--mode);
+  color: var(--on-mode);
   height: 48px;
   padding: 0 20px;
   border-radius: 2px;
@@ -226,7 +196,7 @@ section + section { margin-top: 30px; }
   white-space: nowrap;
 }
 .btn:active { transform: translateY(1px); }
-.btn.ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--ink-3); }
 .btn.small { height: 36px; padding: 0 13px; font-size: 13.5px; }
 .btn.block { width: 100%; }
 .btn[disabled] { opacity: 0.35; }
@@ -716,3 +686,100 @@ details.more summary::-webkit-details-marker { display: none; }
 @media (prefers-reduced-transparency: reduce) {
   .glass, .sheet, .toast { background: var(--board); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
+
+/* ── v3: moods, weather chart, garment drawings ─────────── */
+
+.modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mode-tile {
+  --c: var(--cobalt);
+  appearance: none;
+  text-align: left;
+  border: 1px solid var(--seam);
+  background: var(--board);
+  border-radius: 14px;
+  padding: 12px 12px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  color: var(--ink);
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.mode-tile:active { transform: scale(0.98); }
+.mode-fancy { --c: var(--fancy); }
+.mode-casual { --c: var(--casual); }
+.mode-comfy { --c: var(--comfy); }
+.mode-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-bottom: 6px; box-shadow: 0 0 12px var(--c); }
+.mode-tile b { font-size: 17px; font-weight: 700; font-variation-settings: "wdth" 115; }
+.mode-tile small { font-size: 11.5px; color: var(--ink-3); line-height: 1.3; }
+.mode-tile[aria-pressed="true"] {
+  background: var(--c);
+  border-color: var(--c);
+  color: var(--on-mode);
+  box-shadow: 0 10px 28px -10px var(--c);
+}
+.mode-tile[aria-pressed="true"] small { color: rgba(13, 17, 26, 0.7); }
+.mode-tile[aria-pressed="true"] .mode-dot { background: var(--on-mode); box-shadow: none; }
+
+/* weather: a feels-like curve over your hours */
+.wx-wrap {
+  background: var(--board);
+  border: 1px solid var(--seam);
+  border-radius: 14px;
+  padding: 12px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wx { width: 100%; height: auto; display: block; overflow: visible; }
+.wx-line { fill: none; stroke: var(--mode); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.wx-fill-top { stop-color: var(--mode); stop-opacity: 0.32; }
+.wx-fill-bottom { stop-color: var(--mode); stop-opacity: 0; }
+.wx-dot { fill: var(--board); stroke: var(--mode); stroke-width: 2; }
+.wx-base { stroke: var(--seam); stroke-width: 1; }
+.wx-hatch { fill: var(--rust); opacity: 0.35; }
+.wx-t { font: 500 10px var(--label); fill: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.wx-v { font: 600 12px var(--label); fill: var(--ink); }
+.wx-wrap .care { border: 0; background: none; }
+.wx-wrap .care span { padding: 2px 10px; }
+.wx-wrap .care span:first-child { padding-left: 0; }
+
+.week div.today { box-shadow: inset 0 -2px 0 var(--mode); }
+.week div.fancy { border: 1px solid var(--fancy); color: var(--fancy); background: rgba(227, 191, 114, 0.08); }
+.week div.casual { border: 1px solid var(--casual); color: var(--casual); background: rgba(134, 166, 255, 0.08); }
+.week div.comfy { border: 1px solid var(--comfy); color: var(--comfy); background: rgba(201, 166, 236, 0.08); }
+
+/* the flat-lay: each piece on a softly lit tile */
+.board { gap: 6px; padding: 0; }
+.board > * { box-shadow: none; }
+.tile {
+  border-radius: 12px;
+  border: 1px solid var(--seam);
+  background:
+    radial-gradient(80% 70% at 50% 40%, rgba(255, 255, 255, 0.07), transparent 70%),
+    var(--board);
+}
+.tile img { filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)); }
+.tile.add { border-style: dashed; background: transparent; }
+.mini-board { gap: 4px; padding: 0; }
+.mini-board > * { box-shadow: none; }
+.mini-board .m { border-radius: 8px; border: 1px solid var(--seam); }
+.card .pic, .hero, .list .thumb, .stats, .banner, .drop, .chip, .input, .stepper button { border-radius: 10px; }
+.card .pic, .hero {
+  background:
+    radial-gradient(80% 70% at 50% 40%, rgba(255, 255, 255, 0.06), transparent 70%),
+    var(--board);
+}
+.chip { border-radius: 999px; }
+.btn { border-radius: 12px; }
+.btn.small { border-radius: 10px; }
+
+/* garment drawings for items without a photo */
+.silhouette { width: 82%; height: 82%; max-width: 100%; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)); }
+.tile.shoes .silhouette { width: 70%; height: 90%; }
+.list .thumb .silhouette, .mini-board .silhouette { width: 100%; height: 100%; }
+
+.tape .mark, .tape .mark::before { background: var(--cobalt); }
+.worn-tag { background: var(--mode); color: var(--on-mode); }
+.toast button { color: var(--mode); }
+.tabs a[aria-current="page"] { color: var(--ink); }

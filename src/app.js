@@ -44,6 +44,7 @@ async function render() {
   const r = route();
   const key = `${r.name}/${r.arg}`;
   const frag = h('div');
+  if (r.name !== 'today') delete document.documentElement.dataset.mode;
   const rerender = () => schedule();
   switch (r.name) {
     case 'closet': renderCloset(frag, rerender); break;
