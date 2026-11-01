@@ -88,6 +88,20 @@ export function requiredWarmth(feelsC) {
 
 export const toUnit = (c, unit) => (unit === 'F' ? Math.round(c * 9 / 5 + 32) : Math.round(c));
 
+// The same facts as short care-label items: [{ text, hot }].
+export function labelParts(w, unit = 'C') {
+  if (!w) return [];
+  const lo = toUnit(w.feelsMin, unit), hi = toUnit(w.feelsMax, unit);
+  const parts = [{ text: lo === hi ? `${lo}°${unit}` : `${lo}°→${hi}°${unit}` }];
+  if (w.snow) parts.push({ text: 'snow', hot: true });
+  else if (w.wet) parts.push({ text: w.wetFrom != null && w.wetFrom > w.from ? `rain ${fmtHour(w.wetFrom)}` : 'rain', hot: true });
+  else if (w.rainChance >= 30) parts.push({ text: `rain ${w.rainChance}%` });
+  if (w.windy) parts.push({ text: `wind ${Math.round(w.wind)} km/h`, hot: true });
+  else if (w.sunny && !w.wet) parts.push({ text: 'sun' });
+  else if (!w.wet) parts.push({ text: 'dry' });
+  return parts;
+}
+
 export function describe(w, unit = 'C') {
   if (!w) return '';
   const lo = toUnit(w.feelsMin, unit), hi = toUnit(w.feelsMax, unit);

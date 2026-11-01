@@ -3,7 +3,7 @@
 // library itself. Weather always goes to the network (the app keeps its own
 // last-known copy).
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL = `clothinator-shell-${VERSION}`;
 const RUNTIME = 'clothinator-runtime';
 
@@ -15,7 +15,7 @@ const FILES = [
   'src/data/db.js', 'src/data/store.js', 'src/data/backup.js', 'src/data/weather-service.js',
   'src/core/catalog.js', 'src/core/color.js', 'src/core/rules.js', 'src/core/generate.js',
   'src/core/taste.js', 'src/core/weather.js', 'src/core/week.js',
-  'src/vision/pixels.js', 'src/vision/photo.js', 'src/vision/ai.js',
+  'src/vision/pixels.js', 'src/vision/photo.js', 'src/vision/ai.js', 'src/ui/glyphs.js',
 ];
 
 self.addEventListener('install', (e) => {
@@ -43,8 +43,9 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // The pinned AI library and its WebAssembly runtime never change: cache first.
-  if (url.hostname === 'cdn.jsdelivr.net') {
+  // The pinned AI library, its WebAssembly runtime and the fonts never
+  // change: cache first.
+  if (url.hostname === 'cdn.jsdelivr.net' || url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
     e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
       if (res.ok) caches.open(RUNTIME).then((c) => c.put(e.request, res.clone()));
       return res;

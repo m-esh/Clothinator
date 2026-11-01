@@ -7,6 +7,7 @@ import { state } from '../data/store.js';
 import { CATEGORIES, stats, PATTERNS, FABRIC } from '../core/catalog.js';
 import { COLOR } from '../core/color.js';
 import { isoDate } from '../core/week.js';
+import { washTub } from './glyphs.js';
 
 let filter = 'all';
 
@@ -42,7 +43,7 @@ export function renderCloset(root, rerender) {
       class: `card${i.inLaundry ? ' out' : ''}`,
       onclick: () => { location.hash = `#item/${i.id}`; },
     },
-    h('div', { class: 'pic' }, itemPic(i), i.inLaundry ? h('span', { class: 'badge' }, 'laundry') : null),
+    h('div', { class: 'pic' }, itemPic(i), i.inLaundry ? h('span', { class: 'badge' }, washTub(), 'wash') : null),
     h('div', { class: 't' }, displayName(i)),
     h('div', { class: 'm' }, `${i.wears || 0} wear${i.wears === 1 ? '' : 's'} · ${shortDate(i.lastWorn, today)}`)))));
   }
@@ -58,7 +59,9 @@ export function renderItem(root, id) {
   const today = isoDate();
   const saved = state.outfits.filter((o) => o.itemIds.includes(id));
 
-  root.append(
+  // Wrapped in h() so conditional sections that are null are skipped
+  // (native append would print "null").
+  root.append(h('div', null,
     h('div', { class: 'row between', style: { marginBottom: '14px' } },
       h('a', { class: 'link small', href: '#closet' }, '← Closet'),
       h('a', { class: 'link small', href: `#edit/${id}` }, 'Edit')),
@@ -68,6 +71,8 @@ export function renderItem(root, id) {
       h('div', { class: 'muted small' }, [s.label, i.fabric && FABRIC[i.fabric]?.label, PATTERNS.find((p) => p.key === s.pattern)?.label].filter(Boolean).join(' · ')),
       h('div', { class: 'chips', style: { marginTop: '10px' } },
         (i.colors || []).map((c) => h('span', { class: 'chip', style: { pointerEvents: 'none' } }, h('span', { class: 'swatch', style: { background: COLOR[c.name]?.hex || c.hex } }), c.name)))),
+    h('div', { class: 'tapes', 'aria-label': 'Measurements' },
+      tape('Dressy', s.formality), tape('Warmth', s.warmth), tape('Comfort', s.comfort)),
     h('div', { class: 'stats' },
       h('div', null, h('span', { class: 'label' }, 'Worn'), h('b', null, i.wears || 0)),
       h('div', null, h('span', { class: 'label' }, 'Since wash'), h('b', null, i.wearsSinceWash || 0)),
@@ -91,7 +96,15 @@ export function renderItem(root, id) {
         location.hash = '#closet';
         toast('Deleted');
       }, { danger: true }) }, 'Delete item')),
-  );
+  ));
+}
+
+// A tape measure from 0 to 5 with the value marked.
+function tape(label, value) {
+  return h('div', { class: 'tape-row' },
+    h('span', { class: 'label' }, label),
+    h('div', { class: 'tape', role: 'img', 'aria-label': `${label} ${value} of 5` }, h('span', { class: 'mark', style: { left: `${(value / 5) * 100}%` } })),
+    h('span', { class: 'v' }, String(value)));
 }
 
 function toggleRow(title, sub, on, set) {

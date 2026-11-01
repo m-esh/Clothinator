@@ -8,7 +8,7 @@ import { getWeather } from '../data/weather-service.js';
 import { backupDue, exportBackup } from '../data/backup.js';
 import { suggest, alternatives, assemble, comboKey } from '../core/generate.js';
 import { evaluate, MODES, itemIds, piecesOf } from '../core/rules.js';
-import { describe } from '../core/weather.js';
+import { describe, labelParts } from '../core/weather.js';
 import { isoDate, isWeekend, weekModes, fancyNudge } from '../core/week.js';
 import { stats } from '../core/catalog.js';
 
@@ -126,31 +126,32 @@ export async function renderToday(root, rerender) {
 function header(today, rerender) {
   let weather;
   if (W.status === 'ok' && W.summary) {
-    weather = h('div', { class: 'weather' },
-      `${hourLabel(state.prefs.from)}–${hourLabel(state.prefs.to)}: ${describe(W.summary, state.prefs.unit)}`,
-      W.place ? h('span', { class: 'where' }, ` · ${W.place}`) : null,
-      W.stale ? h('span', { class: 'where' }, ' · offline, last known') : null);
+    const hours = `${hourLabel(state.prefs.from)}–${hourLabel(state.prefs.to)}`;
+    weather = h('div', { class: 'care', 'aria-label': `Weather ${hours}: ${describe(W.summary, state.prefs.unit)}` },
+      h('span', null, hours),
+      labelParts(W.summary, state.prefs.unit).map((p) => h('span', { class: p.hot ? 'hot' : null }, p.text)),
+      W.stale ? h('span', null, 'last known') : null);
   } else if (W.status === 'error') {
-    weather = h('div', { class: 'weather' }, h('span', { class: 'warn' }, W.error), ' · ',
+    weather = h('div', { class: 'weather-error' }, h('span', { class: 'warn' }, W.error), ' · ',
       h('button', { class: 'link small', onclick: () => fetchWeather(today, rerender, true) }, 'Try again'), ' · ',
       h('a', { class: 'link small', href: '#settings' }, 'Set a city'));
   } else {
-    weather = h('div', { class: 'weather faint' }, 'Checking the weather…');
+    weather = h('div', { class: 'care' }, h('span', null, 'Checking the weather'));
   }
 
   const week = weekModes(state.wears, today);
   return h('header', { class: 'today-head' },
+    h('div', { class: 'eyebrow' }, W.place ? `Today · ${W.place}` : 'Today'),
     h('h1', null, longDate(today)),
     weather,
     isWeekend(today) ? null : h('div', { class: 'week', 'aria-label': 'This week' },
       week.map((d, i) => h('div', {
         class: [d.mode, d.date === today ? 'today' : ''].filter(Boolean).join(' '),
-        title: d.mode ? MODES[d.mode].label : '',
-      }, ['M', 'T', 'W', 'T', 'F'][i], d.mode ? ` · ${MODES[d.mode].label.toLowerCase()}` : ''))),
+      }, h('b', null, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][i]), h('small', null, d.mode ? MODES[d.mode].label : '—')))),
   );
 }
 
-const hourLabel = (h) => (h === 12 ? 'noon' : h > 12 ? `${h - 12}pm` : `${h}am`);
+const hourLabel = (x) => (x === 12 ? '12pm' : x > 12 ? `${x - 12}pm` : `${x}am`);
 
 function backupBanner() {
   const never = !state.prefs.lastBackupAt;

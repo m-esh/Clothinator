@@ -6,6 +6,7 @@ import { itemPic, displayName } from './board.js';
 import * as store from '../data/store.js';
 import { state } from '../data/store.js';
 import { isoDate } from '../core/week.js';
+import { washTub } from './glyphs.js';
 
 export function renderLaundry(root) {
   const today = isoDate();
@@ -23,7 +24,7 @@ export function renderLaundry(root) {
     } }, 'Laundry done') : null));
 
   root.append(h('section', null,
-    h('div', { class: 'label', style: { marginBottom: '10px' } }, 'In the wash'),
+    h('div', { class: 'label row', style: { marginBottom: '10px', gap: '6px' } }, washTub(), 'In the wash'),
     inWash.length
       ? h('ul', { class: 'list' }, inWash.map((i) => row(i, today,
         `${i.wearsSinceWash || 0} wear${i.wearsSinceWash === 1 ? '' : 's'} before washing${i.laundrySince ? ` · in since ${shortDate(i.laundrySince, today)}` : ''}`,
