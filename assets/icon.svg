@@ -1,8 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#e9ecea"/>
-  <g fill="none" stroke="#1d2331" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M256 152c0-24 18-40 38-40s36 15 36 34c0 22-20 30-40 42-14 8-34 20-34 38"/>
-    <path d="M256 226 92 332c-16 10-9 32 10 32h308c19 0 26-22 10-32L256 226z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b3550"/>
+      <stop offset="1" stop-color="#151a27"/>
+    </linearGradient>
+    <linearGradient id="glyph" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d9def0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <g fill="none" stroke="url(#glyph)" stroke-width="58" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M512 330c0-46 34-76 74-76s70 29 70 66c0 42-38 58-76 80-28 16-68 38-68 74"/>
+    <path d="M512 474 210 668c-30 19-17 62 19 62h566c36 0 49-43 19-62L512 474z"/>
   </g>
-  <rect x="226" y="364" width="60" height="44" fill="#2c49c9"/>
 </svg>

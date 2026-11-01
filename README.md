@@ -81,3 +81,12 @@ src/vision/    photo pipeline: pixels.js (pure), photo.js, ai.js (transformers.j
 src/data/      IndexedDB, in-memory store, backups, weather service
 src/ui/        one module per screen
 ```
+
+## Icon and iOS 26
+
+The home-screen icon is a full-bleed, opaque square with one bold light glyph
+on deep indigo. A web app can only supply a flat icon (layered Liquid Glass
+icons are a native-app feature), so iOS derives the Tinted and Clear versions
+from its brightness; strong contrast keeps those clean. Inside the app, Liquid
+Glass is used only on the floating controls (tab bar, sheets, notices), and
+turns solid when Reduce Transparency is on.
