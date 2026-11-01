@@ -103,9 +103,7 @@ a { color: inherit; }
 /* Floating capsule tab bar, content scrolls underneath it */
 .tabs {
   position: fixed;
-  left: 50%;
   bottom: calc(var(--safe-b) + var(--tab-gap));
-  transform: translateX(-50%);
   width: min(440px, calc(100% - var(--gutter-l) - var(--gutter-r)));
   height: var(--tab-h);
   display: flex;
@@ -783,3 +781,43 @@ details.more summary::-webkit-details-marker { display: none; }
 .worn-tag { background: var(--mode); color: var(--on-mode); }
 .toast button { color: var(--mode); }
 .tabs a[aria-current="page"] { color: var(--ink); }
+
+/* ── sliding tab highlight ─────────────────────────────── */
+
+.tabs { touch-action: none; user-select: none; -webkit-user-select: none; transform: scaleX(var(--stretch, 1)); transform-origin: var(--origin, center); transition: transform 0.45s cubic-bezier(0.25, 1.5, 0.5, 1); left: 0; right: 0; margin: 0 auto; }
+.tabs a { position: relative; z-index: 1; background: none !important; box-shadow: none !important; -webkit-touch-callout: none; transition: color 0.25s; }
+.tabs a.hover { color: var(--ink); }
+.tab-pill {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 0;
+  border-radius: 999px;
+  background: var(--glass-pill);
+  box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 -1px 0 var(--glass-low);
+  transition:
+    transform 0.5s cubic-bezier(0.3, 1.35, 0.45, 1),
+    width 0.5s cubic-bezier(0.3, 1.35, 0.45, 1),
+    scale 0.35s cubic-bezier(0.3, 1.6, 0.5, 1),
+    background 0.25s;
+  will-change: transform;
+}
+.tab-pill.no-anim { transition: none; }
+/* pressed: the highlight swells into a clear lens and tracks the finger */
+.tab-pill.lens {
+  scale: 1.08 1.14;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.3),
+    0 6px 18px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(2px) saturate(1.6) brightness(1.15);
+  backdrop-filter: blur(2px) saturate(1.6) brightness(1.15);
+}
+.tab-pill.tracking { transition: scale 0.35s cubic-bezier(0.3, 1.6, 0.5, 1), background 0.25s, width 0.3s; }
+
+/* page change: slide in from the direction of travel */
+#view.slide-r { animation: from-right 0.32s cubic-bezier(0.2, 0.8, 0.3, 1); }
+#view.slide-l { animation: from-left 0.32s cubic-bezier(0.2, 0.8, 0.3, 1); }
+@keyframes from-right { from { transform: translateX(28px); opacity: 0; } }
+@keyframes from-left { from { transform: translateX(-28px); opacity: 0; } }

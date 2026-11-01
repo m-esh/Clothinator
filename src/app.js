@@ -9,6 +9,7 @@ import { renderAdd } from './ui/add.js';
 import { renderOutfits, renderBuilder } from './ui/outfits.js';
 import { renderLaundry } from './ui/laundry.js';
 import { renderSettings } from './ui/settings.js';
+import { mountTabs, updateTabs } from './ui/tabbar.js';
 
 const view = document.getElementById('view');
 const tabs = document.getElementById('tabs');
@@ -26,14 +27,7 @@ const route = () => {
   return { name: name || 'today', arg };
 };
 
-function renderTabs(r) {
-  const laundry = state.items.filter((i) => i.inLaundry).length;
-  clear(tabs);
-  for (const [key, label, owns] of TABS) {
-    tabs.append(h('a', { href: `#${key}`, 'aria-current': owns.includes(r.name) ? 'page' : null },
-      label, key === 'laundry' && laundry ? h('span', { class: 'count' }, laundry) : null));
-  }
-}
+mountTabs(tabs, TABS);
 
 let token = 0;
 let lastRoute = null;
@@ -61,7 +55,13 @@ async function render() {
   // Keep focus and scroll when re-rendering the same screen.
   const y = window.scrollY;
   clear(view).append(...frag.childNodes);
-  renderTabs(r);
+  const dir = updateTabs(r.name, { laundry: state.items.filter((i) => i.inLaundry).length });
+  // Slide the new screen in from the side you moved towards.
+  if (dir) {
+    view.classList.remove('slide-l', 'slide-r');
+    void view.offsetWidth;
+    view.classList.add(dir > 0 ? 'slide-r' : 'slide-l');
+  }
   if (key !== lastRoute) window.scrollTo(0, 0);
   else window.scrollTo(0, y);
   lastRoute = key;
