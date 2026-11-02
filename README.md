@@ -84,7 +84,7 @@ src/ui/        one module per screen
 
 ## Icon and iOS 26
 
-The mark is a hanger whose hook is a C. The home-screen icon draws it as
+The mark is a bold C sitting on a hanger. The home-screen icon draws it as
 polished metal on a black glass tile, with the glass edge and sheen built
 into the image. A web app can only supply a flat icon (layered Liquid Glass
 icons are a native-app feature), and iOS mostly just desaturates it in Tinted

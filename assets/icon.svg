@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <!-- Clothinator mark: a hanger whose hook is a C. Drawn as a polished
+  <!-- Clothinator mark: a bold C that turns into a hanger. Drawn as a polished
        metal glyph on a black glass tile, to sit with iOS 26 dark/tinted
        home screens. Full-bleed and opaque: iOS applies its own corner mask. -->
   <defs>
@@ -19,7 +19,7 @@
       <stop offset="1" stop-color="#ffffff" stop-opacity="0.22"/>
     </linearGradient>
     <!-- brushed chrome: bright top, dark band, soft bounce light at the bottom -->
-    <linearGradient id="chrome" x1="0" y1="230" x2="0" y2="800" gradientUnits="userSpaceOnUse">
+    <linearGradient id="chrome" x1="0" y1="150" x2="0" y2="790" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#f4f5f7"/>
       <stop offset="0.3" stop-color="#d9dce1"/>
       <stop offset="0.52" stop-color="#8b9099"/>
@@ -45,25 +45,25 @@
   <ellipse cx="512" cy="40" rx="620" ry="420" fill="url(#sheen)"/>
   <rect x="10" y="10" width="1004" height="1004" rx="222" fill="none" stroke="url(#rim)" stroke-width="7"/>
 
-  <!-- mark -->
-  <g transform="translate(512 500) scale(1.1) translate(-512 -480)">
+  <!-- mark: a bold C that becomes the hanger's hook -->
+  <g transform="translate(0 40)">
   <g filter="url(#lift)" fill="none" stroke-linecap="round" stroke-linejoin="round">
     <!-- dark edge so the metal separates from the tile -->
-    <g stroke="#000" stroke-opacity="0.55" stroke-width="96">
-      <path d="M596 312 A 86 86 0 1 0 512 416 L 512 446"/>
-      <path d="M512 446 L 214 646 Q 176 672 214 694 L 810 694 Q 848 672 810 646 Z"/>
+    <g stroke="#000" stroke-opacity="0.55">
+      <path stroke-width="124" d="M627 234 A 150 150 0 1 0 627 426"/>
+      <path stroke-width="86" d="M512 470 L 512 506"/>
+      <path stroke-width="86" d="M512 506 L 238 686 Q 204 710 238 732 L 786 732 Q 820 710 786 686 Z"/>
     </g>
-    <g stroke="url(#chrome)" stroke-width="80">
-      <!-- the hook: an open C -->
-      <path d="M596 312 A 86 86 0 1 0 512 416 L 512 446"/>
-      <!-- the shoulders and bar -->
-      <path d="M512 446 L 214 646 Q 176 672 214 694 L 810 694 Q 848 672 810 646 Z"/>
+    <g stroke="url(#chrome)">
+      <path stroke-width="70" d="M512 470 L 512 506"/>
+      <path stroke-width="108" d="M627 234 A 150 150 0 1 0 627 426"/>
+      <path stroke-width="70" d="M512 506 L 238 686 Q 204 710 238 732 L 786 732 Q 820 710 786 686 Z"/>
     </g>
     <!-- specular highlights along the top of the metal -->
-    <g stroke="url(#spec)" stroke-width="12" stroke-opacity="0.85" filter="url(#soft)">
-      <path d="M560 262 A 70 70 0 0 0 450 300"/>
-      <path d="M488 470 L 262 622"/>
-      <path d="M300 680 L 724 680"/>
+    <g stroke="url(#spec)" stroke-width="14" stroke-opacity="0.85" filter="url(#soft)">
+      <path d="M592 204 A 128 128 0 0 0 400 250"/>
+      <path d="M492 532 L 272 678"/>
+      <path d="M300 718 L 724 718"/>
     </g>
   </g>
   </g>
