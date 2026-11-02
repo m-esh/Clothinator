@@ -12,6 +12,9 @@ import { renderSettings } from './ui/settings.js';
 import { mountTabs, updateTabs } from './ui/tabbar.js';
 import { applyPalette } from './ui/palette.js';
 
+// Resolves once the launch intro has finished (see index.html).
+export const introDone = window.__introDone || Promise.resolve();
+
 const view = document.getElementById('view');
 const tabs = document.getElementById('tabs');
 
@@ -129,8 +132,11 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || reloaded) return;
     reloaded = true;
-    try { sessionStorage.setItem('skipIntro', '1'); } catch { /* fine */ }
-    location.reload();
+    // Never cut the intro short: reload once it has played.
+    introDone.then(() => {
+      try { sessionStorage.setItem('skipIntro', '1'); } catch { /* fine */ }
+      location.reload();
+    });
   });
   navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
     // Check for a new version whenever the app comes back to the front.

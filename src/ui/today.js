@@ -72,15 +72,18 @@ function compute(mode, today) {
   return result;
 }
 
+// Heavy work waits for the launch intro so its animation stays smooth.
+const introDone = window.__introDone || Promise.resolve();
+
 function schedule(mode, today) {
   if (computing === sigFor(mode)) return;
   computing = sigFor(mode);
-  setTimeout(() => {
+  introDone.then(() => setTimeout(() => {
     computing = null;
     if (!results.has(sigFor(mode))) compute(mode, today);
     rerenderToday();
     warmOthers(mode, today);
-  }, 16);
+  }, 16));
 }
 
 function warmOthers(mode, today) {

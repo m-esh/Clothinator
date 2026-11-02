@@ -987,25 +987,27 @@ body:has(.sheet) { overflow: hidden; }
   background:
     radial-gradient(70% 45% at 50% 42%, var(--glow), transparent 70%),
     var(--cotton);
-  animation: intro-out 0.45s cubic-bezier(0.4, 0, 0.2, 1) 1.95s forwards;
+  animation: intro-out 0.45s cubic-bezier(0.4, 0, 0.2, 1) 2.1s forwards;
   -webkit-user-select: none;
   user-select: none;
 }
 #intro.skip { animation: intro-out 0.24s ease-out forwards; }
-.intro-stage { display: flex; flex-direction: column; align-items: center; gap: 18px; animation: intro-zoom 0.45s cubic-bezier(0.4, 0, 0.2, 1) 1.95s forwards; }
+.intro-stage { display: flex; flex-direction: column; align-items: center; gap: 18px; animation: intro-zoom 0.45s cubic-bezier(0.4, 0, 0.2, 1) 2.1s forwards; }
 .intro-mark { width: min(38vw, 168px); height: auto; overflow: visible; filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.55)); }
 .intro-mark path { stroke-dasharray: 1; stroke-dashoffset: 1; }
 
-/* 1. the C writes itself */
-.intro-c { animation: intro-draw 0.7s cubic-bezier(0.55, 0, 0.25, 1) 0.15s forwards; }
+/* 1. the C writes itself (after a short beat: the app's code loads in
+   the first ~0.2s and would make the stroke stutter) */
+.intro-c { animation: intro-draw 0.7s cubic-bezier(0.55, 0, 0.25, 1) 0.3s forwards; }
 /* 2. the stem drops, the hanger draws in */
-.intro-stem { animation: intro-draw 0.16s ease-out 0.78s forwards; }
-.intro-body { animation: intro-draw 0.55s cubic-bezier(0.3, 0, 0.2, 1) 0.9s forwards; }
+.intro-stem { animation: intro-draw 0.16s ease-out 0.93s forwards; }
+.intro-body { animation: intro-draw 0.55s cubic-bezier(0.3, 0, 0.2, 1) 1.05s forwards; }
 /* 3. it swings from the hook and settles */
 .intro-hanger {
+  will-change: transform;
   transform-box: view-box;
   transform-origin: 512px 470px;
-  animation: intro-swing 1.1s cubic-bezier(0.25, 0, 0.25, 1) 0.95s both;
+  animation: intro-swing 1.1s cubic-bezier(0.25, 0, 0.25, 1) 1.1s both;
 }
 /* 4. the name rises in */
 .intro-word {
@@ -1014,7 +1016,7 @@ body:has(.sheet) { overflow: hidden; }
   letter-spacing: 0.02em;
   color: var(--ink);
   opacity: 0;
-  animation: intro-rise 0.55s cubic-bezier(0.2, 0.8, 0.25, 1) 1.3s forwards;
+  animation: intro-rise 0.55s cubic-bezier(0.2, 0.8, 0.25, 1) 1.45s forwards;
 }
 
 @keyframes intro-draw { to { stroke-dashoffset: 0; } }

@@ -56,15 +56,26 @@
   </div>
   <script>
     (function () {
+      // window.__introDone resolves when the intro has gone. The app holds
+      // its heavy work (and update reloads) until then, so the animation
+      // never stalls and jumps ahead.
+      var resolve;
+      window.__introDone = new Promise(function (r) { resolve = r; });
       var el = document.getElementById('intro');
       var skip = false;
       try { skip = sessionStorage.getItem('skipIntro') === '1'; sessionStorage.removeItem('skipIntro'); } catch (e) {}
-      if (skip) { el.remove(); return; }
+      if (skip) { el.remove(); resolve(); return; }
       var gone = false;
-      function remove() { if (!gone) { gone = true; el.remove(); } }
+      function remove() { if (!gone) { gone = true; el.remove(); resolve(); } }
       el.addEventListener('animationend', function (e) { if (e.target === el) remove(); });
-      el.addEventListener('pointerdown', function () { el.classList.add('skip'); setTimeout(remove, 260); });
-      setTimeout(remove, 3200); // never stay up, whatever happens to animations
+      // Skip only on a deliberate tap, not a stray touch while launching.
+      var shownAt = Date.now();
+      el.addEventListener('click', function () {
+        if (Date.now() - shownAt < 500) return;
+        el.classList.add('skip');
+        setTimeout(remove, 260);
+      });
+      setTimeout(remove, 3400); // never stay up, whatever happens to animations
     })();
   </script>
   <main id="view"></main>
