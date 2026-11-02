@@ -6,6 +6,7 @@ export const PALETTES = [
   { key: 'denim', label: 'Denim', bg: '#0b1122', dots: ['#8199ff', '#e3bf72', '#86a6ff', '#c9a6ec'] },
   { key: 'espresso', label: 'Espresso', bg: '#170f09', dots: ['#e2a465', '#e8c172', '#9fbf8f', '#dba3a0'] },
   { key: 'forest', label: 'Forest', bg: '#07150f', dots: ['#7fd6b0', '#e5c06f', '#78c2c6', '#e3a58c'] },
+  { key: 'plum', label: 'Plum', bg: '#120a1c', dots: ['#b792ff', '#e9c47c', '#8fb4ff', '#f2a7cb'] },
   { key: 'oxblood', label: 'Oxblood', bg: '#18090e', dots: ['#e4707e', '#e6c27a', '#8eaee6', '#d9a6c8'] },
 ];
 

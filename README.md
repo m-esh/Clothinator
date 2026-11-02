@@ -94,7 +94,7 @@ get a new icon. Inside the app, Liquid
 Glass is used only on the floating controls (tab bar, sheets, notices), and
 turns solid when Reduce Transparency is on.
 
-The app is dark only, in one of five colour schemes picked in Settings
-(Graphite, Denim, Espresso, Forest, Oxblood). Each mode has its own colour that tints the screen once you pick it, including the
+The app is dark only, in one of six colour schemes picked in Settings
+(Graphite, Denim, Espresso, Forest, Plum, Oxblood). Each mode has its own colour that tints the screen once you pick it, including the
 feels-like temperature chart for your hours. Items added without a photo are
 drawn as a garment shape in their own colour and pattern.

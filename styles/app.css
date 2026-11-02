@@ -947,6 +947,16 @@ body:has(.sheet) { overflow: hidden; }
   --glass: rgba(56, 24, 34, 0.55); --glass-strong: rgba(45, 19, 27, 0.9);
 }
 
+/* deep plum, violet light */
+:root[data-palette="plum"] {
+  --cotton: #120a1c; --board: #22132f; --board-2: #2f1a40;
+  --ink: #f1e9f8; --ink-2: #bcabcb; --ink-3: #866f97; --seam: #3d2654;
+  --cobalt: #b792ff; --on-cobalt: #120a1c;
+  --fancy: #e9c47c; --casual: #8fb4ff; --comfy: #f2a7cb; --on-mode: #120a1c;
+  --glow: rgba(183, 146, 255, 0.18);
+  --glass: rgba(52, 30, 74, 0.55); --glass-strong: rgba(42, 24, 60, 0.9);
+}
+
 /* scheme picker in Settings */
 .palettes { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
 .palette {
