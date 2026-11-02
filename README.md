@@ -84,10 +84,13 @@ src/ui/        one module per screen
 
 ## Icon and iOS 26
 
-The home-screen icon is a full-bleed, opaque square with one bold light glyph
-on deep indigo. A web app can only supply a flat icon (layered Liquid Glass
-icons are a native-app feature), so iOS derives the Tinted and Clear versions
-from its brightness; strong contrast keeps those clean. Inside the app, Liquid
+The mark is a hanger whose hook is a C. The home-screen icon draws it as
+polished metal on a black glass tile, with the glass edge and sheen built
+into the image. A web app can only supply a flat icon (layered Liquid Glass
+icons are a native-app feature), and iOS mostly just desaturates it in Tinted
+mode, so the look has to be in the picture itself. Home-screen icons don't
+update on their own: remove the app from the home screen and add it again to
+get a new icon. Inside the app, Liquid
 Glass is used only on the floating controls (tab bar, sheets, notices), and
 turns solid when Reduce Transparency is on.
 
