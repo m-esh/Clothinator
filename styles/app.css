@@ -7,18 +7,19 @@
 /* One deliberate look: dark, always. Denim at night. */
 :root {
   /* colour */
-  --cotton: #0d111a;     /* page: indigo night (name kept from v1) */
-  --board: #161b27;      /* where garments are laid out */
-  --board-2: #202736;    /* pressed / secondary fills */
+  --cotton: #0b1122;     /* page: indigo night (name kept from v1) */
+  --board: #152039;      /* where garments are laid out */
+  --board-2: #1f2c4a;    /* pressed / secondary fills */
   --ink: #ecebe6;        /* thread white */
   --ink-2: #a9afbd;
   --ink-3: #6f7689;
-  --seam: #262d3e;       /* stitching lines */
+  --seam: #283656;       /* stitching lines */
   --cobalt: #8199ff;     /* default action colour */
   --on-cobalt: #0d111a;
   --rust: #f08c62;       /* semantic: warning */
   --moss: #8fd1a9;       /* semantic: fine */
   --scrim: rgba(3, 5, 10, 0.6);
+  --glow: rgba(129, 153, 255, 0.16); /* soft light at the top of the page */
 
   /* the three moods */
   --fancy: #e3bf72;      /* brass button */
@@ -61,7 +62,7 @@ body {
   /* denim twill: fine diagonal weave, barely there */
   background-image:
     repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 4px),
-    radial-gradient(120% 60% at 50% -10%, rgba(129, 153, 255, 0.10), transparent 60%);
+    radial-gradient(120% 60% at 50% -10%, var(--glow), transparent 60%);
   background-attachment: fixed;
   color: var(--ink);
   font: 400 16px/1.5 var(--body);
@@ -716,7 +717,7 @@ details.more summary::-webkit-details-marker { display: none; }
   color: var(--on-mode);
   box-shadow: 0 10px 28px -10px var(--c);
 }
-.mode-tile[aria-pressed="true"] small { color: rgba(13, 17, 26, 0.7); }
+.mode-tile[aria-pressed="true"] small { color: color-mix(in srgb, var(--on-mode) 72%, transparent); }
 .mode-tile[aria-pressed="true"] .mode-dot { background: var(--on-mode); box-shadow: none; }
 
 /* weather: a feels-like curve over your hours */
@@ -743,9 +744,9 @@ details.more summary::-webkit-details-marker { display: none; }
 .wx-wrap .care span:first-child { padding-left: 0; }
 
 .week div.today { box-shadow: inset 0 -2px 0 var(--mode); }
-.week div.fancy { border: 1px solid var(--fancy); color: var(--fancy); background: rgba(227, 191, 114, 0.08); }
-.week div.casual { border: 1px solid var(--casual); color: var(--casual); background: rgba(134, 166, 255, 0.08); }
-.week div.comfy { border: 1px solid var(--comfy); color: var(--comfy); background: rgba(201, 166, 236, 0.08); }
+.week div.fancy { border: 1px solid var(--fancy); color: var(--fancy); background: color-mix(in srgb, var(--fancy) 9%, transparent); }
+.week div.casual { border: 1px solid var(--casual); color: var(--casual); background: color-mix(in srgb, var(--casual) 9%, transparent); }
+.week div.comfy { border: 1px solid var(--comfy); color: var(--comfy); background: color-mix(in srgb, var(--comfy) 9%, transparent); }
 
 /* the flat-lay: each piece on a softly lit tile */
 .board { gap: 6px; padding: 0; }
@@ -904,3 +905,62 @@ details.more summary::-webkit-details-marker { display: none; }
 /* Smooth momentum and no rubber-banding of the page behind sheets */
 html { scroll-behavior: auto; }
 body:has(.sheet) { overflow: hidden; }
+
+/* ── colour schemes ────────────────────────────────────── */
+/* Picked in Settings. Each redefines only tokens; the layout never changes.
+   The base :root above is "Denim". */
+
+:root[data-palette="graphite"] {
+  /* matches a monochrome home screen: black glass, silver, quiet colour */
+  --cotton: #0a0a0b; --board: #151517; --board-2: #1f1f22;
+  --ink: #f0f0f2; --ink-2: #aeaeb4; --ink-3: #74747b; --seam: #2a2a2e;
+  --cobalt: #e9e9ec; --on-cobalt: #0a0a0b;
+  --fancy: #d9c49a; --casual: #9fb4cf; --comfy: #c3b5d6; --on-mode: #0a0a0b;
+  --glow: rgba(255, 255, 255, 0.06);
+  --glass: rgba(34, 34, 38, 0.55); --glass-strong: rgba(28, 28, 31, 0.9);
+}
+:root[data-palette="espresso"] {
+  /* dark roast and leather: warm browns, cream thread */
+  --cotton: #170f09; --board: #281a10; --board-2: #362417;
+  --ink: #f3e9dc; --ink-2: #c1b1a0; --ink-3: #8f7a64; --seam: #432e1e;
+  --cobalt: #e2a465; --on-cobalt: #120e0b;
+  --fancy: #e8c172; --casual: #9fbf8f; --comfy: #dba3a0; --on-mode: #120e0b;
+  --glow: rgba(226, 164, 101, 0.16);
+  --glass: rgba(52, 36, 24, 0.55); --glass-strong: rgba(42, 29, 19, 0.9);
+}
+:root[data-palette="forest"] {
+  /* pine at night: green-black, mint white */
+  --cotton: #07150f; --board: #10271c; --board-2: #183527;
+  --ink: #e6f0ea; --ink-2: #a3b6ab; --ink-3: #6c8577; --seam: #234433;
+  --cobalt: #7fd6b0; --on-cobalt: #0a110f;
+  --fancy: #e5c06f; --casual: #78c2c6; --comfy: #e3a58c; --on-mode: #0a110f;
+  --glow: rgba(127, 214, 176, 0.14);
+  --glass: rgba(22, 46, 34, 0.55); --glass-strong: rgba(18, 38, 28, 0.9);
+}
+:root[data-palette="oxblood"] {
+  /* deep burgundy, like a good leather shoe */
+  --cotton: #18090e; --board: #2c111a; --board-2: #3b1a25;
+  --ink: #f4e6e8; --ink-2: #c2a9ad; --ink-3: #937078; --seam: #4a2331;
+  --cobalt: #e4707e; --on-cobalt: #120a0c;
+  --fancy: #e6c27a; --casual: #8eaee6; --comfy: #d9a6c8; --on-mode: #120a0c;
+  --glow: rgba(228, 112, 126, 0.16);
+  --glass: rgba(56, 24, 34, 0.55); --glass-strong: rgba(45, 19, 27, 0.9);
+}
+
+/* scheme picker in Settings */
+.palettes { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+.palette {
+  appearance: none;
+  border: 1.5px solid var(--seam);
+  border-radius: 14px;
+  padding: 10px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--ink);
+}
+.palette[aria-pressed="true"] { border-color: var(--ink); }
+.palette .dots { display: flex; gap: 4px; }
+.palette .dots i { width: 14px; height: 14px; border-radius: 50%; display: block; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
+.palette b { font-size: 13.5px; font-weight: 600; }

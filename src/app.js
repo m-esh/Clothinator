@@ -10,6 +10,7 @@ import { renderOutfits, renderBuilder } from './ui/outfits.js';
 import { renderLaundry } from './ui/laundry.js';
 import { renderSettings } from './ui/settings.js';
 import { mountTabs, updateTabs } from './ui/tabbar.js';
+import { applyPalette } from './ui/palette.js';
 
 const view = document.getElementById('view');
 const tabs = document.getElementById('tabs');
@@ -38,6 +39,7 @@ async function render() {
   const r = route();
   const key = `${r.name}/${r.arg}`;
   const frag = h('div');
+  applyPalette(state.prefs.palette);
   if (r.name !== 'today') delete document.documentElement.dataset.mode;
   const rerender = () => schedule();
   switch (r.name) {

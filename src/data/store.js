@@ -22,6 +22,7 @@ const DEFAULT_PREFS = {
   to: 17,
   neverPairs: [],
   location: null, // null = use the phone's location
+  palette: 'graphite',
   lastBackupAt: null,
   backupSnoozedAt: null,
   createdAt: null,

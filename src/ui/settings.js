@@ -7,6 +7,7 @@ import { state } from '../data/store.js';
 import { geocode } from '../core/weather.js';
 import { exportBackup, importBackup } from '../data/backup.js';
 import { invalidateWeather } from './today.js';
+import { PALETTES } from './palette.js';
 
 let models = null; // { background, classify } once checked
 let downloading = null;
@@ -22,6 +23,22 @@ export function renderSettings(root, rerender) {
   }
 
   root.append(h('div', { class: 'page-head' }, h('h1', null, 'Settings')));
+
+  // ── look ──
+  root.append(h('section', null,
+    h('div', { class: 'label', style: { marginBottom: '10px' } }, 'Colour scheme'),
+    h('div', { class: 'palettes', role: 'group', 'aria-label': 'Colour scheme' },
+      PALETTES.map((pal) => h('button', {
+        key: pal.key,
+        class: 'palette',
+        style: { background: pal.bg },
+        'aria-pressed': String((p.palette || 'graphite') === pal.key),
+        onclick: () => store.updatePrefs({ palette: pal.key }),
+      },
+      h('span', { class: 'dots' }, pal.dots.map((c) => h('i', { style: { background: c } }))),
+      h('b', { style: { color: '#f0f0f2' } }, pal.label)))),
+    h('p', { class: 'tiny faint', style: { marginTop: '8px' } }, 'The three dots after the first are the Fancy, Casual and Comfy colours.'),
+  ));
 
   // ── weather ──
   root.append(h('section', null,
