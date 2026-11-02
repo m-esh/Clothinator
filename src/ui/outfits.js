@@ -9,7 +9,7 @@ import { evaluate, MODES, isProblem, formalityOf } from '../core/rules.js';
 import { CATEGORIES, stats } from '../core/catalog.js';
 import { isoDate } from '../core/week.js';
 
-export function renderOutfits(root) {
+export function renderOutfits(root, rerender) {
   root.append(h('div', { class: 'page-head' },
     h('h1', null, 'Outfits'),
     state.outfits.length ? h('a', { class: 'btn small', href: '#build' }, 'New') : null));
@@ -28,22 +28,38 @@ export function renderOutfits(root) {
     const fit = assemble(pieces);
     return { o, pieces, band: sectionOf(o, fit), ev: evaluate(fit, { mode: o.mode || 'casual', prefs: state.prefs, ignoreMode: true }) };
   });
-  for (const band of BANDS) {
-    const list = rows.filter((r) => r.band === band.key);
-    if (!list.length) continue;
-    root.append(h('section', { key: band.key },
-      h('div', { class: 'label row', style: { gap: '7px' } }, h('i', { class: `band-dot mode-${band.key}` }), `${band.label} · ${list.length}`),
-      h('ul', { class: 'list' }, list.map(({ o, pieces, ev }) => {
-        const warns = ev.notes.filter(isProblem).length;
-        const out = pieces.filter((p) => p.inLaundry).length;
-        return h('li', { key: o.id, style: { display: 'block', cursor: 'pointer' }, onclick: () => outfitSheet(o) },
-          miniBoard(pieces),
-          h('div', { class: 'row between', style: { marginTop: '8px' } },
-            h('span', { class: 'small' }, o.name || describe(pieces)),
-            h('span', { class: 'tiny faint' }, [out ? `${out} in laundry` : null, warns ? `${warns} warning${warns > 1 ? 's' : ''}` : null].filter(Boolean).join(' · '))));
-      }))));
+  // One section at a time, picked with a segmented control.
+  const counts = Object.fromEntries(BANDS.map((b) => [b.key, rows.filter((r) => r.band === b.key).length]));
+  if (!shownBand || (!counts[shownBand] && rows.length)) shownBand = remembered() || BANDS.find((b) => counts[b.key])?.key || 'fancy';
+  root.append(h('div', { class: 'seg quiet band-tabs', role: 'tablist', 'aria-label': 'Sections' },
+    BANDS.map((b) => h('button', {
+      role: 'tab',
+      'aria-selected': String(shownBand === b.key),
+      'aria-pressed': String(shownBand === b.key),
+      onclick: () => { shownBand = b.key; remember(b.key); rerender(); },
+    }, h('i', { class: `band-dot mode-${b.key}` }), b.label, h('span', { class: 'band-count' }, String(counts[b.key]))))));
+
+  const list = rows.filter((r) => r.band === shownBand);
+  if (!list.length) {
+    const label = BANDS.find((b) => b.key === shownBand).label.toLowerCase();
+    root.append(h('div', { class: 'empty' }, h('p', null, `No ${label} outfits yet.`)));
+    return;
   }
+  root.append(h('ul', { class: 'list', key: `list-${shownBand}` }, list.map(({ o, pieces, ev }) => {
+    const warns = ev.notes.filter(isProblem).length;
+    const out = pieces.filter((p) => p.inLaundry).length;
+    return h('li', { key: o.id, style: { display: 'block', cursor: 'pointer' }, onclick: () => outfitSheet(o) },
+      miniBoard(pieces),
+      h('div', { class: 'row between', style: { marginTop: '8px' } },
+        h('span', { class: 'small' }, o.name || describe(pieces)),
+        h('span', { class: 'tiny faint' }, [out ? `${out} in laundry` : null, warns ? `${warns} warning${warns > 1 ? 's' : ''}` : null].filter(Boolean).join(' · '))));
+  })));
 }
+
+// The section you were last looking at (kept for next time).
+let shownBand = null;
+const remembered = () => { try { return localStorage.getItem('outfitsBand'); } catch { return null; } };
+const remember = (k) => { try { localStorage.setItem('outfitsBand', k); } catch { /* fine */ } };
 
 const BANDS = [
   { key: 'fancy', label: 'Fancy' },
