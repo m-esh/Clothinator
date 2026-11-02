@@ -3,7 +3,7 @@
 // library itself. Weather always goes to the network (the app keeps its own
 // last-known copy).
 
-const VERSION = 'v11';
+const VERSION = 'v12';
 const SHELL = `clothinator-shell-${VERSION}`;
 const RUNTIME = 'clothinator-runtime';
 
@@ -34,7 +34,10 @@ self.addEventListener('fetch', (e) => {
 
   // Our own files: network first so updates land, cache when offline.
   if (url.origin === location.origin) {
-    e.respondWith(fetch(e.request)
+    // 'no-cache' revalidates with the server every time (a cheap 304 when
+    // nothing changed), so updates show up on the next open instead of
+    // waiting out GitHub Pages' 10-minute cache.
+    e.respondWith(fetch(e.request, { cache: 'no-cache' })
       .then((res) => {
         if (res.ok) caches.open(SHELL).then((c) => c.put(e.request, res.clone()));
         return res;
