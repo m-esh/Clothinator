@@ -1113,12 +1113,16 @@ h3 { font: 600 17px/1.3 var(--body); }
   -webkit-backdrop-filter: blur(20px) saturate(1.8);
   backdrop-filter: blur(20px) saturate(1.8);
   border-bottom: 0.5px solid var(--seam);
+  /* Hidden with visibility, not just opacity: page transitions snapshot
+     named elements regardless of opacity, which flashed the frosted bar
+     across the top on every tab switch. No transition name either, so a
+     shown bar simply moves with the page. */
   opacity: 0;
-  transition: opacity 0.2s ease;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0s linear 0.2s;
   pointer-events: none;
-  view-transition-name: navbar;
 }
-#navbar.shown { opacity: 1; }
+#navbar.shown { opacity: 1; visibility: visible; transition: opacity 0.2s ease, visibility 0s; }
 
 /* buttons: filled tint, gray, plain text */
 .btn { border: 0; border-radius: 14px; height: 50px; font: 600 17px var(--body); letter-spacing: -0.01em; }
