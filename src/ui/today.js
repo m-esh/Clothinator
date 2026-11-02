@@ -11,6 +11,7 @@ import { evaluate, MODES, itemIds, piecesOf } from '../core/rules.js';
 import { describe, labelParts, toUnit } from '../core/weather.js';
 import { isoDate, isWeekend, weekModes, fancyNudge } from '../core/week.js';
 import { stats } from '../core/catalog.js';
+import { openWeather } from './weather-sheet.js';
 
 // Morning session: survives closing the app, resets the next day.
 let S = null;
@@ -29,7 +30,7 @@ function fetchWeather(date, rerender, force = false) {
   if (!force && (W.status === 'loading' || (W.date === date && W.status === 'ok'))) return;
   W = { ...W, status: 'loading', date };
   getWeather(state.prefs, date, { force })
-    .then((r) => { W = { status: 'ok', summary: r.summary, place: r.place, stale: r.stale, date, error: null }; })
+    .then((r) => { W = { status: 'ok', summary: r.summary, day: r.day || [], place: r.place, stale: r.stale, date, error: null }; })
     .catch((e) => { W = { status: 'error', summary: null, place: null, error: e.message, date }; })
     .finally(rerender);
 }
@@ -185,7 +186,14 @@ function header(today, rerender) {
   const week = weekModes(state.wears, today);
   return h('header', { class: 'today-head' },
     h('h1', null, longDate(today)),
-    W.status === 'ok' && W.summary ? h('div', { class: 'wx-wrap' }, wxChart(W.summary, state.prefs.unit), weather) : weather,
+    W.status === 'ok' && W.summary ? h('div', {
+      class: 'wx-wrap tappable',
+      role: 'button',
+      tabindex: '0',
+      'aria-label': 'Open the full forecast',
+      onclick: showWeather,
+      onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showWeather(); } },
+    }, h('span', { class: 'wx-more', 'aria-hidden': 'true' }, '›'), wxChart(W.summary, state.prefs.unit), weather) : weather,
     isWeekend(today) ? null : h('div', { class: 'week', 'aria-label': 'This week' },
       week.map((d, i) => h('div', {
         class: [d.mode, d.date === today ? 'today' : ''].filter(Boolean).join(' '),
@@ -238,6 +246,11 @@ function wxChart(w, unit) {
   const mid = Math.round(last / 2);
   [[first, 'start'], [mid, 'middle'], [last, 'end']].forEach(([i, a]) => label(hourLabel(pts[i].h), x(i), H - 6, a));
   return svg;
+}
+
+function showWeather() {
+  if (!W.day?.length) return;
+  openWeather({ day: W.day, summary: W.summary, place: W.place, unit: state.prefs.unit, from: state.prefs.from, to: state.prefs.to });
 }
 
 const hourLabel = (x) => (x === 12 ? '12pm' : x > 12 ? `${x - 12}pm` : `${x}am`);

@@ -1,7 +1,7 @@
 // Where you are and what the weather is doing there, with caching so the
 // app opens instantly and still works on a flaky connection.
 
-import { fetchForecast, summarize } from '../core/weather.js';
+import { fetchForecast, summarize, dayHours } from '../core/weather.js';
 import { getKV, setKV } from './store.js';
 
 const HOUR = 3600000;
@@ -40,16 +40,16 @@ export async function getWeather(prefs, date, { force = false } = {}) {
   const fresh = cached && near(cached, c) && Date.now() - cached.at < HOUR;
   if (fresh && !force) {
     const s = summarize(cached.data, date, prefs.from, prefs.to);
-    if (s) return { summary: s, place: c.label, stale: false };
+    if (s) return { summary: s, place: c.label, stale: false, day: dayHours(cached.data, date) };
   }
   try {
     const data = await fetchForecast(c.lat, c.lon);
     await setKV('forecast', { lat: c.lat, lon: c.lon, at: Date.now(), data });
-    return { summary: summarize(data, date, prefs.from, prefs.to), place: c.label, stale: false };
+    return { summary: summarize(data, date, prefs.from, prefs.to), place: c.label, stale: false, day: dayHours(data, date) };
   } catch (e) {
     if (cached && near(cached, c)) {
       const s = summarize(cached.data, date, prefs.from, prefs.to);
-      if (s) return { summary: s, place: c.label, stale: true };
+      if (s) return { summary: s, place: c.label, stale: true, day: dayHours(cached.data, date) };
     }
     throw new Error('Couldn\'t load the weather');
   }

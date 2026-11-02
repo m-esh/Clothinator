@@ -19,6 +19,7 @@
   --rust: #f08c62;       /* semantic: warning */
   --moss: #8fd1a9;       /* semantic: fine */
   --scrim: rgba(3, 5, 10, 0.6);
+  --rain: #7fb2ff;   /* rain is always blue, whatever the scheme */
   --glow: rgba(129, 153, 255, 0.16); /* soft light at the top of the page */
 
   /* the three moods */
@@ -1034,3 +1035,27 @@ body:has(.sheet) { overflow: hidden; }
   .intro-mark path { stroke-dashoffset: 0; }
   .intro-word { opacity: 1; }
 }
+
+/* ── weather details ───────────────────────────────────── */
+
+.wx-wrap.tappable { position: relative; cursor: pointer; transition: transform 0.18s var(--spring), border-color 0.25s; }
+.wx-wrap.tappable:active { transform: scale(0.985); }
+.wx-more { position: absolute; top: 8px; right: 12px; font: 400 20px/1 var(--display); color: var(--ink-3); }
+
+.wxd-wrap { display: flex; flex-direction: column; gap: 18px; }
+.wxd-wrap section { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.wxd-wrap .why { margin: 0; }
+.wxd-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.wxd-head b { font: 700 28px/1 var(--display); font-variation-settings: "wdth" 115; font-variant-numeric: tabular-nums; }
+.wxd-head span { color: var(--ink-2); font-size: 14px; }
+.wxd { width: 100%; height: auto; display: block; overflow: visible; }
+.wxd-band { fill: var(--ink); opacity: 0.05; }
+.wxd-rain { fill: var(--rain); opacity: 0.45; }
+.wxd-rain.wet { opacity: 0.9; }
+.wxd-amt { font: 500 9.5px var(--label); fill: var(--rain); }
+.wxd-wind { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.wxd-gust { fill: none; stroke: var(--ink-3); stroke-width: 1.6; stroke-dasharray: 4 4; stroke-linejoin: round; }
+.wxd-arrow { fill: var(--ink-2); }
+.wxd-key { display: inline-flex; align-items: center; gap: 5px; text-transform: none; letter-spacing: 0; font-family: var(--body); font-size: 12px; }
+.wxd-key i { display: inline-block; width: 14px; height: 0; border-top: 2px solid var(--ink); margin-left: 6px; }
+.wxd-key i.k-gust { border-top: 2px dashed var(--ink-3); }

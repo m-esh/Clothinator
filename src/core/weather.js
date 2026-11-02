@@ -9,7 +9,7 @@ export async function fetchForecast(lat, lon) {
     longitude: lon.toFixed(4),
     hourly: [
       'temperature_2m', 'apparent_temperature', 'precipitation_probability',
-      'precipitation', 'wind_speed_10m', 'wind_gusts_10m', 'weather_code', 'cloud_cover',
+      'precipitation', 'wind_speed_10m', 'wind_gusts_10m', 'wind_direction_10m', 'weather_code', 'cloud_cover',
     ].join(','),
     timezone: 'auto',
     forecast_days: '2',
@@ -121,4 +121,43 @@ export function describe(w, unit = 'C') {
   return parts.join(', ');
 }
 
-export const fmtHour = (h) => (h === 12 ? '12pm' : h > 12 ? `${h - 12}pm` : `${h}am`);
+export const fmtHour = (h) => (h === 0 || h === 24 ? '12am' : h === 12 ? '12pm' : h > 12 ? `${h - 12}pm` : `${h}am`);
+
+// Every hour of `date`, for the detailed weather view.
+export function dayHours(forecast, date) {
+  const h = forecast?.hourly;
+  if (!h) return [];
+  const out = [];
+  for (let i = 0; i < h.time.length; i++) {
+    const [d, t] = h.time[i].split('T');
+    if (d !== date) continue;
+    out.push({
+      h: Number(t.slice(0, 2)),
+      temp: h.temperature_2m?.[i],
+      feels: h.apparent_temperature?.[i] ?? h.temperature_2m?.[i],
+      prob: h.precipitation_probability?.[i] ?? 0,
+      mm: h.precipitation?.[i] ?? 0,
+      wind: h.wind_speed_10m?.[i] ?? 0,
+      gust: h.wind_gusts_10m?.[i] ?? 0,
+      dir: h.wind_direction_10m?.[i] ?? null,
+      code: h.weather_code?.[i] ?? null,
+    });
+  }
+  return out;
+}
+
+const COMPASS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+// Wind direction is where it blows *from*, as forecasts give it.
+export const compass = (deg) => (deg == null ? '' : COMPASS[Math.round((((deg % 360) + 360) % 360) / 45) % 8]);
+
+export const windUnit = (unit) => (unit === 'F' ? 'mph' : 'km/h');
+export const toWind = (kmh, unit) => Math.round(unit === 'F' ? kmh * 0.621371 : kmh);
+export const rainUnit = (unit) => (unit === 'F' ? 'in' : 'mm');
+export const toRain = (mm, unit) => (unit === 'F' ? Math.round((mm / 25.4) * 100) / 100 : Math.round(mm * 10) / 10);
+
+const CODES = [
+  [[0], 'Clear'], [[1], 'Mostly clear'], [[2], 'Partly cloudy'], [[3], 'Overcast'], [[45, 48], 'Fog'],
+  [[51, 53, 55, 56, 57], 'Drizzle'], [[61, 80], 'Light rain'], [[63, 81], 'Rain'], [[65, 82], 'Heavy rain'],
+  [[66, 67], 'Freezing rain'], [[71, 73, 75, 77, 85, 86], 'Snow'], [[95, 96, 99], 'Thunderstorms'],
+];
+export const codeLabel = (c) => CODES.find(([cs]) => cs.includes(c))?.[1] || '';

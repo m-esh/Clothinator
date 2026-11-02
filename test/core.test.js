@@ -239,3 +239,18 @@ test('no collared shirts under hoodies, no flannel on fancy days', () => {
     assert.notEqual(p.outfit.mid?.type, 'hoodie');
   }
 });
+
+test('full-day hours, compass and unit conversions for the weather view', async () => {
+  const { dayHours, compass, toWind, toRain, fmtHour } = await import('../src/core/weather.js');
+  const time = [], t = [], dir = [];
+  for (let i = 0; i < 24; i++) { time.push(`2026-11-03T${String(i).padStart(2, '0')}:00`); t.push(i); dir.push(270); }
+  time.push('2026-11-04T00:00'); t.push(99); dir.push(0);
+  const hours = dayHours({ hourly: { time, temperature_2m: t, wind_direction_10m: dir } }, '2026-11-03');
+  assert.equal(hours.length, 24);
+  assert.equal(hours[5].feels, 5, 'falls back to air temperature');
+  assert.equal(compass(270), 'west');
+  assert.equal(compass(-45), 'north-west');
+  assert.equal(toWind(100, 'F'), 62);
+  assert.equal(toRain(25.4, 'F'), 1);
+  assert.equal(fmtHour(0), '12am');
+});
