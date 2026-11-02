@@ -21,46 +21,47 @@ export function renderOutfits(root) {
     return;
   }
 
-  // Grouped by how dressy each outfit actually is (the same scoring the
-  // suggestions use), dressiest first within each group.
+  // Sections by how dressy an outfit is: the mood you saved it under, or,
+  // without one, how dressy its pieces are. Newest first within each.
   const rows = state.outfits.map((o) => {
     const pieces = o.itemIds.map(store.itemById).filter(Boolean);
     const fit = assemble(pieces);
-    return { o, pieces, f: formalityOf(fit), ev: evaluate(fit, { mode: o.mode || 'casual', prefs: state.prefs }) };
+    return { o, pieces, band: sectionOf(o, fit), ev: evaluate(fit, { mode: o.mode || 'casual', prefs: state.prefs, ignoreMode: true }) };
   });
   for (const band of BANDS) {
-    const list = rows.filter((r) => band.test(r.f)).sort((a, b) => b.f - a.f);
+    const list = rows.filter((r) => r.band === band.key);
     if (!list.length) continue;
     root.append(h('section', { key: band.key },
       h('div', { class: 'label row', style: { gap: '7px' } }, h('i', { class: `band-dot mode-${band.key}` }), `${band.label} · ${list.length}`),
-      h('ul', { class: 'list' }, list.map(({ o, pieces, f, ev }) => {
+      h('ul', { class: 'list' }, list.map(({ o, pieces, ev }) => {
         const warns = ev.notes.filter(isProblem).length;
         const out = pieces.filter((p) => p.inLaundry).length;
         return h('li', { key: o.id, style: { display: 'block', cursor: 'pointer' }, onclick: () => outfitSheet(o) },
           miniBoard(pieces),
           h('div', { class: 'row between', style: { marginTop: '8px' } },
             h('span', { class: 'small' }, o.name || describe(pieces)),
-            h('span', { class: 'row', style: { gap: '8px' } },
-              h('span', { class: 'tiny faint' }, [out ? `${out} in laundry` : null, warns ? `${warns} warning${warns > 1 ? 's' : ''}` : null].filter(Boolean).join(' · ')),
-              h('span', { class: 'meter mini', title: `Dressiness ${f.toFixed(1)} of 5` }, h('span', { style: { width: `${(f / 5) * 100}%` } })))));
+            h('span', { class: 'tiny faint' }, [out ? `${out} in laundry` : null, warns ? `${warns} warning${warns > 1 ? 's' : ''}` : null].filter(Boolean).join(' · '))));
       }))));
   }
 }
 
-// Dressiness bands, from the 0 (gym) … 5 (black tie) scale.
 const BANDS = [
-  { key: 'fancy', label: 'Fancy', test: (f) => f >= 3.2 },
-  { key: 'casual', label: 'Casual', test: (f) => f >= 1.8 && f < 3.2 },
-  { key: 'comfy', label: 'Comfy', test: (f) => f < 1.8 },
+  { key: 'fancy', label: 'Fancy' },
+  { key: 'casual', label: 'Casual' },
+  { key: 'comfy', label: 'Comfy' },
 ];
+
+// Dressiness 0 (gym) … 5 (black tie) → section.
+const bandFor = (f) => (f >= 3.2 ? 'fancy' : f >= 1.8 ? 'casual' : 'comfy');
+const sectionOf = (o, fit) => (o.mode && MODES[o.mode] ? o.mode : bandFor(formalityOf(fit)));
 
 const describe = (pieces) => pieces.filter((p) => ['top', 'bottom', 'onepiece'].includes(stats(p).cat)).map(displayName).join(', ');
 
 function outfitSheet(o) {
   const pieces = o.itemIds.map(store.itemById).filter(Boolean);
   const fit = assemble(pieces);
-  const mode = o.mode || 'casual';
-  const ev = evaluate(fit, { mode, prefs: state.prefs });
+  const mode = sectionOf(o, fit);
+  const ev = evaluate(fit, { mode, prefs: state.prefs, ignoreMode: true });
   sheet(o.name || 'Outfit', (close) => h('div', null,
     board(fit),
     h('ul', { class: 'why' }, ev.notes.map((n) => h('li', { class: isProblem(n) ? 'warn' : n.tone === 'tip' ? 'tip' : '' }, n.text))),
@@ -83,18 +84,21 @@ let B = null;
 export function renderBuilder(root, rerender, editId = null) {
   if (!B || B.editingId !== editId) {
     const o = editId && state.outfits.find((x) => x.id === editId);
-    B = { editingId: editId, ids: o ? [...o.itemIds] : [], name: o?.name || '', mode: o?.mode || 'casual' };
+    // mode null = "work it out from the pieces" until you pick a section.
+    B = { editingId: editId, ids: o ? [...o.itemIds] : [], name: o?.name || '', mode: o?.mode || null };
   }
   const pieces = B.ids.map(store.itemById).filter(Boolean);
   const fit = assemble(pieces);
-  const ev = pieces.length ? evaluate(fit, { mode: B.mode, prefs: state.prefs }) : null;
+  const section = B.mode || (pieces.length ? bandFor(formalityOf(fit)) : 'casual');
+  const ev = pieces.length ? evaluate(fit, { mode: section, prefs: state.prefs, ignoreMode: true }) : null;
 
   root.append(
     h('div', { class: 'row between', style: { marginBottom: '14px' } },
       h('a', { class: 'link back', href: '#outfits', onclick: () => { B = null; } }, 'Outfits')),
     h('h1', { style: { marginBottom: '16px' } }, editId ? 'Edit outfit' : 'Build an outfit'),
+    h('div', { class: 'label', style: { marginBottom: '7px' } }, 'Section'),
     h('div', { class: 'seg quiet', style: { marginBottom: '16px' } },
-      Object.values(MODES).map((m) => h('button', { 'aria-pressed': String(B.mode === m.key), onclick: () => { B.mode = m.key; rerender(); } }, m.label))),
+      Object.values(MODES).map((m) => h('button', { 'aria-pressed': String(section === m.key), onclick: () => { B.mode = m.key; rerender(); } }, m.label))),
   );
 
   if (pieces.length) {
@@ -119,8 +123,8 @@ export function renderBuilder(root, rerender, editId = null) {
       h('input', { class: 'input', value: B.name, placeholder: 'e.g. Friday meetings', oninput: (e) => { B.name = e.target.value; } })),
     h('button', { class: 'btn block', style: { marginTop: '18px' }, disabled: pieces.length < 2, onclick: async () => {
       const r = editId
-        ? await store.updateOutfit(editId, { itemIds: B.ids, name: B.name.trim(), mode: B.mode })
-        : await store.saveOutfit(B.ids, { name: B.name.trim(), mode: B.mode });
+        ? await store.updateOutfit(editId, { itemIds: B.ids, name: B.name.trim(), mode: section })
+        : await store.saveOutfit(B.ids, { name: B.name.trim(), mode: section });
       if (r?.duplicate) {
         toast(r.name ? `You already have this outfit saved as "${r.name}"` : 'You already have this outfit saved');
         return;

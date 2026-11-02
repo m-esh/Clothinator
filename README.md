@@ -68,8 +68,9 @@ are never suggested.
 
 ## Outfits, counts and the leaderboard
 
-- **Outfits** are grouped into Fancy, Casual and Comfy by how dressy they
-  actually are, dressiest first.
+- **Outfits** sit in Fancy, Casual and Comfy sections: the mood you saved
+  them under, or how dressy the pieces are. Newest first; no ranking, and
+  no "too dressy / too casual" warnings there (the section says it).
 - **Wear counts** can be corrected by hand: tap the stats on an item's page
   to set times worn, wears since washing and the last-worn date.
 - **Laundry** actions (wash, clean, laundry done) all have Undo, which puts

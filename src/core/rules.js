@@ -126,14 +126,18 @@ export function evaluate(outfit, ctx = {}) {
       warn(`${name(outfit[hi])} is a lot dressier than ${name(outfit[lo])}`);
     }
   }
+  // How well it fits the mood. Skipped with `ignoreMode` (the Outfits page,
+  // where an outfit's section already says how dressy it is).
   const F = formalityOf(outfit);
-  const off = (F - mode.target) / mode.tol;
+  const off = ctx.ignoreMode ? 0 : (F - mode.target) / mode.tol;
   score -= Math.min(3, off * off * 0.8);
-  if (Math.abs(off) < 0.5) good(mode.key === 'fancy' ? 'properly sharp' : mode.key === 'comfy' ? 'relaxed all the way' : 'easy, not sloppy');
-  else if (Math.abs(off) > 1.5) warn(off > 0 ? `dressier than ${mode.label.toLowerCase()}` : `too casual for ${mode.label.toLowerCase()}`);
+  if (!ctx.ignoreMode) {
+    if (Math.abs(off) < 0.5) good(mode.key === 'fancy' ? 'properly sharp' : mode.key === 'comfy' ? 'relaxed all the way' : 'easy, not sloppy');
+    else if (Math.abs(off) > 1.5) warn(off > 0 ? `dressier than ${mode.label.toLowerCase()}` : `too casual for ${mode.label.toLowerCase()}`);
+  }
 
   // One clearly casual piece drags a fancy outfit down, however sharp the rest.
-  if (mode.key === 'fancy') {
+  if (mode.key === 'fancy' && !ctx.ignoreMode) {
     for (const sl of seen) {
       if (S[sl].formality < 2.25 && !(sl === 'outer' && (w?.wet || w?.windy || (w && w.feelsMin < 5)))) {
         score -= 0.7;
