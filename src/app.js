@@ -1,10 +1,10 @@
 // Boot, routing and the tab bar.
 
-import { h, clear } from './ui/dom.js';
+import { h, clear, morph } from './ui/dom.js';
 import * as store from './data/store.js';
 import { state } from './data/store.js';
 import { renderToday } from './ui/today.js';
-import { renderCloset, renderItem } from './ui/closet.js';
+import { renderCloset, renderItem, clearHero } from './ui/closet.js';
 import { renderAdd } from './ui/add.js';
 import { renderOutfits, renderBuilder } from './ui/outfits.js';
 import { renderLaundry } from './ui/laundry.js';
@@ -52,19 +52,55 @@ async function render() {
     default: await renderToday(frag, rerender);
   }
   if (my !== token) return; // a newer render started meanwhile
-  // Keep focus and scroll when re-rendering the same screen.
-  const y = window.scrollY;
-  clear(view).append(...frag.childNodes);
-  const dir = updateTabs(r.name, { laundry: state.items.filter((i) => i.inLaundry).length });
-  // Slide the new screen in from the side you moved towards.
-  if (dir) {
-    view.classList.remove('slide-l', 'slide-r');
-    void view.offsetWidth;
-    view.classList.add(dir > 0 ? 'slide-r' : 'slide-l');
+
+  const counts = { laundry: state.items.filter((i) => i.inLaundry).length };
+
+  // Same screen: patch in place. Unchanged elements stay put, so nothing
+  // flickers and CSS transitions run.
+  if (key === lastRoute) {
+    morph(view, frag);
+    updateTabs(r.name, counts);
+    return;
   }
-  if (key !== lastRoute) window.scrollTo(0, 0);
-  else window.scrollTo(0, y);
+
+  // New screen: a page transition in the direction of travel.
+  const kind = navKind(lastRoute, r);
   lastRoute = key;
+  const swap = () => {
+    clear(view).append(...frag.childNodes);
+    updateTabs(r.name, counts);
+    window.scrollTo(0, 0);
+  };
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (document.startViewTransition && !reduce && kind !== 'none') {
+    document.documentElement.dataset.nav = kind;
+    const t = document.startViewTransition(swap);
+    t.finished.finally(() => {
+      delete document.documentElement.dataset.nav;
+      if (r.name !== 'item') clearHero();
+    });
+  } else {
+    swap();
+    if (kind === 'forward' || kind === 'back') {
+      view.classList.remove('slide-l', 'slide-r');
+      void view.offsetWidth;
+      view.classList.add(kind === 'forward' ? 'slide-r' : 'slide-l');
+    }
+  }
+}
+
+const DEPTH = { item: 1, add: 1, build: 1, edit: 2 };
+const tabOf = (name) => TABS.findIndex(([, , owns]) => owns.includes(name));
+
+// 'forward' (deeper or a tab to the right), 'back', 'fade' or 'none'.
+function navKind(prevKey, r) {
+  if (!prevKey) return 'none';
+  const prev = prevKey.split('/')[0];
+  const dt = tabOf(r.name) - tabOf(prev);
+  if (dt) return dt > 0 ? 'forward' : 'back';
+  const dd = (DEPTH[r.name] || 0) - (DEPTH[prev] || 0);
+  if (dd) return dd > 0 ? 'forward' : 'back';
+  return 'fade';
 }
 
 let pending = false;

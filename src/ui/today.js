@@ -17,7 +17,6 @@ let S = null;
 const fresh = (date) => ({ date, mode: null, skip: [], custom: null, weekend: false, changing: false });
 
 let W = { status: 'idle', summary: null, place: null, error: null, date: null };
-let cache = { sig: null, result: null };
 
 async function loadSession(date) {
   if (S?.date === date) return;
@@ -43,29 +42,69 @@ function ctxFor() {
   return { mode: S.mode, weather: W.summary, prefs: state.prefs, model: state.model };
 }
 
+// Suggestions are computed off the tap: the screen updates first (mode tile
+// lit, placeholder board), the engine runs a frame later, and the other
+// modes are prepared quietly afterwards so switching is instant.
+// Skips are applied on read, so "Another" never recomputes.
+const results = new Map(); // sig → result
+const lastByMode = new Map(); // mode → last result, shown while refreshing
+let computing = null;
+let rerenderToday = () => {};
+
+const sigFor = (mode) => [mode, W.summary ? `${W.summary.feelsMin}|${W.summary.feelsMax}|${W.summary.wet}` : '-', state.version].join('#');
+
+function compute(mode, today) {
+  const result = suggest({
+    items: state.items,
+    saved: state.outfits,
+    wears: state.wears.filter((w) => w.date !== today),
+    mode,
+    weather: W.summary,
+    prefs: state.prefs,
+    model: state.model,
+    today,
+    seed: `${today}:${mode}`,
+  });
+  results.set(sigFor(mode), result);
+  lastByMode.set(mode, result);
+  if (results.size > 12) results.delete(results.keys().next().value);
+  return result;
+}
+
+function schedule(mode, today) {
+  if (computing === sigFor(mode)) return;
+  computing = sigFor(mode);
+  setTimeout(() => {
+    computing = null;
+    if (!results.has(sigFor(mode))) compute(mode, today);
+    rerenderToday();
+    warmOthers(mode, today);
+  }, 16);
+}
+
+function warmOthers(mode, today) {
+  const others = Object.keys(MODES).filter((m) => m !== mode && !results.has(sigFor(m)));
+  if (!others.length) return;
+  const idle = globalThis.requestIdleCallback || ((fn) => setTimeout(fn, 250));
+  idle(() => { if (!results.has(sigFor(others[0]))) compute(others[0], today); warmOthers(mode, today); });
+}
+
+// → { picks, pool, stale } or null when nothing is ready yet
 function picks(today) {
-  const sig = [S.mode, S.skip.join(','), W.summary ? `${W.summary.feelsMin}|${W.summary.feelsMax}|${W.summary.wet}` : '-', state.version].join('#');
-  if (cache.sig !== sig) {
-    cache = {
-      sig,
-      result: suggest({
-        items: state.items,
-        saved: state.outfits,
-        wears: state.wears.filter((w) => w.date !== today),
-        mode: S.mode,
-        weather: W.summary,
-        prefs: state.prefs,
-        model: state.model,
-        today,
-        skip: S.skip,
-        seed: `${today}:${S.mode}`,
-      }),
-    };
+  let result = results.get(sigFor(S.mode));
+  let stale = false;
+  if (!result) {
+    schedule(S.mode, today);
+    result = lastByMode.get(S.mode);
+    if (!result) return null;
+    stale = true;
   }
-  return cache.result;
+  const skip = new Set(S.skip);
+  return { picks: result.picks.filter((p) => !skip.has(p.combo)), pool: result.pool, stale };
 }
 
 export async function renderToday(root, rerender) {
+  rerenderToday = rerender;
   const today = isoDate();
   await loadSession(today);
   fetchWeather(today, rerender);
@@ -188,7 +227,7 @@ function wxChart(w, unit) {
   });
   const line = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
   svg.append(el('path', { d: `${line} L${x(pts.length - 1)} ${H - B} L${x(0)} ${H - B} Z`, fill: 'url(#wxfill)' }));
-  svg.append(el('path', { d: line, class: 'wx-line' }));
+  svg.append(el('path', { d: line, class: 'wx-line', pathLength: '1' }));
   svg.append(el('line', { x1: 0, x2: W, y1: H - B, y2: H - B, class: 'wx-base' }));
   const label = (txt, px, py, anchor, cls = 'wx-t') => { const t = el('text', { x: px, y: py, 'text-anchor': anchor, class: cls }); t.textContent = txt; svg.append(t); };
   const first = 0, last = pts.length - 1;
@@ -223,13 +262,22 @@ function currentOutfit(today) {
     if (pieces.length) return { outfit: assemble(pieces), custom: true };
     S.custom = null;
   }
-  const { picks: list, pool } = picks(today);
+  const ready = picks(today);
+  if (!ready) return { loading: true };
+  const { picks: list, pool } = ready;
   return list.length ? { outfit: list[0].outfit, notes: list[0].notes, pool, savedId: list[0].savedId } : { outfit: null, pool };
 }
 
 function pickView(today, rerender, worn) {
   const wrap = h('section');
   const cur = currentOutfit(today);
+
+  if (cur.loading) {
+    // Same shape as a real outfit, so the swap-in doesn't jump.
+    wrap.append(h('div', { class: 'board loading', 'aria-busy': 'true', 'aria-label': 'Picking an outfit' },
+      ['big', 'big', 'big', 'big', 'shoes', 'acc'].map((size, i) => h('div', { key: `ph${i}`, class: `tile ${size} placeholder` }))));
+    return wrap;
+  }
 
   if (!cur.outfit) {
     const inLaundry = state.items.filter((i) => i.inLaundry).length;

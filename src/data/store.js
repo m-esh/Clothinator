@@ -231,6 +231,8 @@ export const setKV = (k, v) => db.put('kv', v, k);
 
 const photoCache = new Map();
 
+export const cachedPhotoURL = (id, kind = 'thumb') => photoCache.get(`${id}:${kind}`);
+
 export async function photoURL(id, kind = 'thumb') {
   const key = `${id}:${kind}`;
   if (photoCache.has(key)) return photoCache.get(key);

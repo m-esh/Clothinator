@@ -821,3 +821,86 @@ details.more summary::-webkit-details-marker { display: none; }
 #view.slide-l { animation: from-left 0.32s cubic-bezier(0.2, 0.8, 0.3, 1); }
 @keyframes from-right { from { transform: translateX(28px); opacity: 0; } }
 @keyframes from-left { from { transform: translateX(-28px); opacity: 0; } }
+
+/* ── motion ────────────────────────────────────────────── */
+/* One spring curve and one ease-out for the whole app, so everything moves
+   with the same feel. */
+:root {
+  --spring: cubic-bezier(0.3, 1.3, 0.45, 1);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+/* Page transitions (iOS Safari 18+ view transitions). The tab bar sits out
+   of the page snapshot so it never slides with the content. */
+.tabs { view-transition-name: tabbar; }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 0.34s; animation-timing-function: var(--ease-out); }
+:root[data-nav="forward"]::view-transition-old(root) { animation-name: vt-out-left; }
+:root[data-nav="forward"]::view-transition-new(root) { animation-name: vt-in-right; }
+:root[data-nav="back"]::view-transition-old(root) { animation-name: vt-out-right; }
+:root[data-nav="back"]::view-transition-new(root) { animation-name: vt-in-left; }
+::view-transition-group(hero) { animation-duration: 0.42s; animation-timing-function: cubic-bezier(0.25, 1, 0.3, 1); }
+::view-transition-group(tabbar) { animation: none; }
+@keyframes vt-out-left { to { transform: translateX(-32px); opacity: 0; } }
+@keyframes vt-in-right { from { transform: translateX(40px); opacity: 0; } }
+@keyframes vt-out-right { to { transform: translateX(32px); opacity: 0; } }
+@keyframes vt-in-left { from { transform: translateX(-40px); opacity: 0; } }
+
+/* Touch feedback: everything you can press gives a little. */
+.btn, .chip, .card, .tile, .alt, .mode-tile, .link, .stepper button, .seg button {
+  transition: transform 0.18s var(--spring), background-color 0.25s, border-color 0.25s, color 0.25s, opacity 0.2s, box-shadow 0.3s;
+}
+.btn:active, .chip:active, .stepper button:active, .seg button:active { transform: scale(0.96); }
+.card:active, button.tile:active, .mode-tile:active { transform: scale(0.97); }
+.alt:active { opacity: 0.6; }
+
+/* New outfit pieces settle in one after another; unchanged ones stay put. */
+.board .tile { animation: tile-in 0.42s var(--spring) both; animation-delay: calc(var(--i, 0) * 45ms); }
+@keyframes tile-in { from { opacity: 0; transform: translateY(10px) scale(0.96); } }
+.board .tile.add { animation-delay: 0.25s; }
+
+/* Placeholder while the first outfit is worked out */
+.tile.placeholder { animation: none; background: var(--board); position: relative; overflow: hidden; }
+.tile.placeholder::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
+  animation: shimmer 1.2s linear infinite;
+}
+@keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* Lists and cards appear softly when they're new */
+.list li, .grid .card, .why li { animation: fade-up 0.35s var(--ease-out) both; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(6px); } }
+
+/* The temperature line draws itself in */
+.wx-line { stroke-dasharray: 1; animation: draw 0.9s var(--ease-out) both; }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+/* Mode tiles: colour change eases, selection springs */
+.mode-tile { transition: transform 0.25s var(--spring), background-color 0.3s var(--ease-out), border-color 0.3s, color 0.3s, box-shadow 0.4s var(--ease-out); }
+.mode-tile[aria-pressed="true"] { transform: translateY(-2px); }
+.wx-line, .wx-dot, .worn-tag, .btn { transition-property: transform, background-color, border-color, color, stroke, box-shadow; transition-duration: 0.3s; }
+
+/* Sheets: spring up, slide away, follow the finger when dragged */
+.sheet { animation: sheet-in 0.42s var(--spring); transition: transform 0.35s var(--spring); touch-action: pan-y; }
+.sheet.dragging { transition: none; }
+.sheet.out { animation: sheet-out 0.26s var(--ease-out) forwards; pointer-events: none; }
+.scrim { transition: opacity 0.2s; }
+.scrim.out { animation: fade-out 0.24s ease-out forwards; pointer-events: none; }
+.grab-zone { padding: 2px 0 6px; margin: -6px 0 0; cursor: grab; touch-action: none; }
+.sheet-head { touch-action: none; }
+@keyframes sheet-in { from { transform: translateY(100%); } }
+@keyframes sheet-out { to { transform: translateY(105%); } }
+@keyframes fade-out { to { opacity: 0; } }
+
+/* Toasts: rise in, drop out */
+.toast { animation: toast-in 0.4s var(--spring); }
+.toast.out { animation: toast-out 0.22s var(--ease-out) forwards; }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 16px) scale(0.96); } }
+@keyframes toast-out { to { opacity: 0; transform: translate(-50%, 10px) scale(0.97); } }
+
+/* Smooth momentum and no rubber-banding of the page behind sheets */
+html { scroll-behavior: auto; }
+body:has(.sheet) { overflow: hidden; }

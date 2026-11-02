@@ -116,20 +116,24 @@ async function runPhoto(source, method, rerender) {
   }
 }
 
-let progressEls = null;
+// Progress is written straight into whatever is on screen, so it keeps
+// working when the page is patched in place.
 function updateProgress() {
-  if (!progressEls || !D?.status) return;
-  progressEls.text.textContent = D.status.text;
-  const p = D.status.progress;
-  progressEls.bar.classList.toggle('indet', p == null);
-  progressEls.bar.firstChild.style.width = p == null ? '' : `${Math.round(p * 100)}%`;
+  if (!D?.status) return;
+  const text = document.querySelector('.js-progress-text');
+  const bar = document.querySelector('.js-progress-bar');
+  if (text) text.textContent = D.status.text;
+  if (bar) {
+    const p = D.status.progress;
+    bar.classList.toggle('indet', p == null);
+    bar.firstChild.style.width = p == null ? '' : `${Math.round(p * 100)}%`;
+  }
 }
 
 function processingStage() {
-  const text = h('div', { class: 'muted' }, D.status?.text || 'Working');
-  const bar = h('div', { class: 'progress indet' }, h('div'));
-  progressEls = { text, bar };
-  queueMicrotask(updateProgress);
+  const text = h('div', { class: 'muted js-progress-text' }, D.status?.text || 'Working');
+  const bar = h('div', { class: 'progress indet js-progress-bar' }, h('div'));
+  requestAnimationFrame(updateProgress);
   return h('div', { class: 'drop' }, text, bar,
     h('p', { class: 'tiny faint', style: { marginBottom: 0 } }, 'The first photo downloads the on-phone models (about 135 MB, once). After that it takes a few seconds and works offline.'));
 }
@@ -154,9 +158,8 @@ function formStage(rerender) {
   }
 
   if (D.guessing) {
-    const text = h('span', null, D.status?.text || 'Working out what it is');
-    const bar = h('div', { class: 'progress indet' }, h('div'));
-    progressEls = { text, bar };
+    const text = h('span', { class: 'js-progress-text' }, D.status?.text || 'Working out what it is');
+    const bar = h('div', { class: 'progress indet js-progress-bar' }, h('div'));
     wrap.append(h('div', { class: 'ai-note', style: { marginTop: '14px' } }, text, bar));
   }
 

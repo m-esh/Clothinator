@@ -11,6 +11,13 @@ import { washTub } from './glyphs.js';
 
 let filter = 'all';
 
+// The item whose picture morphs between the grid and its own page.
+let heroId = null;
+export function clearHero() {
+  heroId = null;
+  for (const el of document.querySelectorAll('.card .pic')) el.style.viewTransitionName = '';
+}
+
 export function renderCloset(root, rerender) {
   const items = state.items;
   root.append(h('div', { class: 'page-head' },
@@ -40,10 +47,15 @@ export function renderCloset(root, rerender) {
     if (!list.length) continue;
     root.append(h('div', { class: 'cat-title' }, h('span', { class: 'label' }, c.label), h('span', { class: 'tiny faint num' }, list.length)));
     root.append(h('div', { class: 'grid' }, list.map((i) => h('button', {
+      key: i.id,
       class: `card${i.inLaundry ? ' out' : ''}`,
-      onclick: () => { location.hash = `#item/${i.id}`; },
+      onclick: (e) => {
+        heroId = i.id;
+        e.currentTarget.querySelector('.pic').style.viewTransitionName = 'hero';
+        location.hash = `#item/${i.id}`;
+      },
     },
-    h('div', { class: 'pic' }, itemPic(i), i.inLaundry ? h('span', { class: 'badge' }, washTub(), 'wash') : null),
+    h('div', { class: 'pic', style: i.id === heroId ? { viewTransitionName: 'hero' } : null }, itemPic(i), i.inLaundry ? h('span', { class: 'badge' }, washTub(), 'wash') : null),
     h('div', { class: 't' }, displayName(i)),
     h('div', { class: 'm' }, `${i.wears || 0} wear${i.wears === 1 ? '' : 's'} · ${shortDate(i.lastWorn, today)}`)))));
   }
@@ -51,6 +63,7 @@ export function renderCloset(root, rerender) {
 
 export function renderItem(root, id) {
   const i = store.itemById(id);
+  heroId = id;
   if (!i) {
     root.append(h('p', null, 'That item doesn\'t exist any more. ', h('a', { href: '#closet' }, 'Back to closet')));
     return;
@@ -65,7 +78,7 @@ export function renderItem(root, id) {
     h('div', { class: 'row between', style: { marginBottom: '14px' } },
       h('a', { class: 'link small', href: '#closet' }, '← Closet'),
       h('a', { class: 'link small', href: `#edit/${id}` }, 'Edit')),
-    h('div', { class: 'hero' }, itemPic(i, 'cutout')),
+    h('div', { class: 'hero', style: { viewTransitionName: 'hero' } }, itemPic(i, 'cutout')),
     h('div', { style: { marginTop: '16px' } },
       h('h1', null, displayName(i)),
       h('div', { class: 'muted small' }, [s.label, i.fabric && FABRIC[i.fabric]?.label, PATTERNS.find((p) => p.key === s.pattern)?.label].filter(Boolean).join(' · ')),
