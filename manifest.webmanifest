@@ -1,6 +1,6 @@
 {
-  "name": "Clothinator",
-  "short_name": "Clothinator",
+  "name": "Clad",
+  "short_name": "Clad",
   "description": "What to wear today, picked for you.",
   "start_url": "./#today",
   "scope": "./",

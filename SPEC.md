@@ -1,4 +1,4 @@
-# Clothinator — spec
+# Clad — spec
 
 A personal outfit picker for one person, one iPhone. Open it in the morning,
 pick how you feel, get one outfit that suits the weather and looks right.

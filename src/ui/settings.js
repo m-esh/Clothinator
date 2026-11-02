@@ -110,7 +110,7 @@ export function renderSettings(root, rerender) {
   ));
 
   root.append(h('p', { class: 'tiny faint', style: { marginTop: '36px' } },
-    'Clothinator 1.0 · weather by Open-Meteo · everything stays on this phone'));
+    'Clad 1.0 · weather by Open-Meteo · everything stays on this phone'));
 }
 
 function hourSelect(value, onChange) {

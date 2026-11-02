@@ -4,6 +4,7 @@
 import * as db from './db.js';
 import { state, load, updatePrefs } from './store.js';
 
+// Internal format id kept from the app's first name so older backups still restore.
 export const FORMAT = 'clothinator-backup';
 export const VERSION = 1;
 
@@ -41,7 +42,7 @@ export async function buildBackup() {
 // readable message; returns the data with photos still as data URLs.
 export function checkBackup(data) {
   if (!data || typeof data !== 'object') throw new Error('Not a backup file.');
-  if (data.format !== FORMAT) throw new Error('This isn\'t a Clothinator backup.');
+  if (data.format !== FORMAT) throw new Error('This isn\'t a Clad backup.');
   if (data.version > VERSION) throw new Error('This backup is from a newer version of the app.');
   for (const k of ['items', 'outfits', 'wears']) {
     if (!Array.isArray(data[k])) throw new Error(`Backup is damaged (${k} missing).`);
@@ -66,12 +67,12 @@ export function checkBackup(data) {
 
 export async function exportBackup() {
   const data = await buildBackup();
-  const name = `clothinator-backup-${data.exportedAt.slice(0, 10)}.json`;
+  const name = `clad-backup-${data.exportedAt.slice(0, 10)}.json`;
   const file = new File([JSON.stringify(data)], name, { type: 'application/json' });
   let shared = false;
   if (navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: 'Clothinator backup' });
+      await navigator.share({ files: [file], title: 'Clad backup' });
       shared = true;
     } catch (e) {
       if (e.name === 'AbortError') return false;

@@ -1,5 +1,6 @@
 // Thin promise wrapper around IndexedDB. Everything lives on the phone.
 
+// Kept from the app's first name: renaming it would orphan saved data.
 const NAME = 'clothinator';
 const VERSION = 1;
 export const STORES = ['items', 'photos', 'outfits', 'wears', 'kv'];

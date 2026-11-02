@@ -1,4 +1,4 @@
-# Clothinator
+# Clad
 
 Open it in the morning, tap **Fancy**, **Casual** or **Comfy**, and get one
 outfit that suits today's weather, isn't a repeat of last week, and doesn't
@@ -11,7 +11,7 @@ phone. See [SPEC.md](SPEC.md) for the decisions behind it.
 
 1. On GitHub: **Settings → Pages → Build and deployment → Deploy from a
    branch**, then pick this branch and `/ (root)`. Save.
-2. After a minute, open `https://m-esh.github.io/Clothinator/` in **Safari**.
+2. After a minute, open `https://m-esh.github.io/Clothinator/` in **Safari** (or `/Clad/` if the repo is renamed to Clad).
 3. Share → **Add to Home Screen**. Open it from the home screen from now on.
 4. Allow location when asked (used only for the weather).
 
