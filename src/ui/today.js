@@ -369,7 +369,10 @@ function pickView(today, rerender, worn) {
     } }, 'Another'),
     h('button', { class: 'btn ghost', 'aria-pressed': String(!!saved), onclick: async () => {
       if (saved) { await store.deleteOutfit(saved.id); toast('Removed from saved'); }
-      else { await store.saveOutfit(ids, { mode: S.mode }); toast('Saved to outfits'); }
+      else {
+        const r = await store.saveOutfit(ids, { mode: S.mode });
+        toast(r.duplicate ? 'Already in your outfits' : 'Saved to outfits');
+      }
     } }, saved ? 'Saved' : 'Save'),
   ));
   // One way back, never two.

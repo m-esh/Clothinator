@@ -5,6 +5,7 @@ import * as db from './db.js';
 import { emptyModel, record } from '../core/taste.js';
 import { comboKey, assemble } from '../core/generate.js';
 import { isoDate } from '../core/week.js';
+import { stats } from '../core/catalog.js';
 
 export const state = {
   items: [],
@@ -44,6 +45,7 @@ export async function load() {
   ]);
   state.items = items.sort((a, b) => a.createdAt - b.createdAt);
   state.outfits = outfits.sort((a, b) => b.createdAt - a.createdAt);
+  await dedupeOutfits(); // items are loaded above, which the check needs
   state.wears = wears.sort((a, b) => (a.date === b.date ? a.at - b.at : a.date < b.date ? -1 : 1));
   state.prefs = { ...DEFAULT_PREFS, ...(prefs || {}) };
   if (!state.prefs.createdAt) {
@@ -109,6 +111,7 @@ export async function deleteItem(id) {
     if (o.itemIds.length < 2) await deleteOutfit(o.id, false);
     else await db.put('outfits', o);
   }
+  await dedupeOutfits();
   state.prefs.neverPairs = state.prefs.neverPairs.filter((p) => !p.includes(id));
   await db.put('kv', state.prefs, 'prefs');
   emit();
@@ -178,7 +181,20 @@ export async function undoWear(id, notify = true) {
 
 // ── saved outfits ───────────────────────────────────────────
 
+// Two outfits are the same if they have the same clothes, in any order.
+// Accessories don't count: the same outfit with a watch is still that outfit.
+export function clothesKey(itemIds) {
+  return itemIds
+    .filter((id) => { const i = itemById(id); return !i || stats(i).cat !== 'accessory'; })
+    .sort()
+    .join('+');
+}
+
+// Saving an outfit you already have returns the existing one instead of
+// making a copy (`duplicate: true` tells the caller).
 export async function saveOutfit(itemIds, { name = '', mode = null, learnFrom = true } = {}) {
+  const existing = findSaved(itemIds);
+  if (existing) return { ...existing, duplicate: true };
   const o = { id: uid(), itemIds: [...itemIds], name, mode, createdAt: Date.now() };
   state.outfits.unshift(o);
   await db.put('outfits', o);
@@ -187,9 +203,15 @@ export async function saveOutfit(itemIds, { name = '', mode = null, learnFrom = 
   return o;
 }
 
+// Refuses (returns the clashing outfit) if the edit would turn it into a copy
+// of another saved outfit.
 export async function updateOutfit(id, patch) {
   const o = state.outfits.find((x) => x.id === id);
-  if (!o) return;
+  if (!o) return null;
+  if (patch.itemIds) {
+    const clash = findSaved(patch.itemIds, id);
+    if (clash) return { ...clash, duplicate: true };
+  }
   Object.assign(o, patch);
   await db.put('outfits', o);
   emit();
@@ -201,10 +223,25 @@ export async function deleteOutfit(id, notify = true) {
   if (notify) emit();
 }
 
-export const findSaved = (itemIds) => {
-  const key = [...itemIds].sort().join('+');
-  return state.outfits.find((o) => [...o.itemIds].sort().join('+') === key);
+export const findSaved = (itemIds, exceptId = null) => {
+  const key = clothesKey([...itemIds]);
+  return state.outfits.find((o) => o.id !== exceptId && clothesKey([...o.itemIds]) === key);
 };
+
+// Merge outfits that have become copies of each other (older versions of
+// the app, or deleting a piece that made two outfits identical). Keeps the
+// oldest, and its name, or the first name any copy had.
+async function dedupeOutfits() {
+  const byKey = new Map();
+  for (const o of [...state.outfits].sort((a, b) => a.createdAt - b.createdAt)) {
+    const key = clothesKey([...o.itemIds]);
+    const keep = byKey.get(key);
+    if (!keep) { byKey.set(key, o); continue; }
+    if (!keep.name && o.name) { keep.name = o.name; await db.put('outfits', keep); }
+    state.outfits = state.outfits.filter((x) => x.id !== o.id);
+    await db.del('outfits', o.id);
+  }
+}
 
 // ── prefs, taste, session ───────────────────────────────────
 

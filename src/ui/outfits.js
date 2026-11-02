@@ -98,8 +98,13 @@ export function renderBuilder(root, rerender, editId = null) {
     h('label', { class: 'field', style: { marginTop: '20px' } }, h('span', { class: 'label' }, 'Name (optional)'),
       h('input', { class: 'input', value: B.name, placeholder: 'e.g. Friday meetings', oninput: (e) => { B.name = e.target.value; } })),
     h('button', { class: 'btn block', style: { marginTop: '18px' }, disabled: pieces.length < 2, onclick: async () => {
-      if (editId) await store.updateOutfit(editId, { itemIds: B.ids, name: B.name.trim(), mode: B.mode });
-      else await store.saveOutfit(B.ids, { name: B.name.trim(), mode: B.mode });
+      const r = editId
+        ? await store.updateOutfit(editId, { itemIds: B.ids, name: B.name.trim(), mode: B.mode })
+        : await store.saveOutfit(B.ids, { name: B.name.trim(), mode: B.mode });
+      if (r?.duplicate) {
+        toast(r.name ? `You already have this outfit saved as "${r.name}"` : 'You already have this outfit saved');
+        return;
+      }
       B = null;
       location.hash = '#outfits';
       toast('Outfit saved');
