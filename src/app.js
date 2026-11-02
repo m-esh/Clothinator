@@ -11,6 +11,7 @@ import { renderLaundry } from './ui/laundry.js';
 import { renderSettings } from './ui/settings.js';
 import { mountTabs, updateTabs } from './ui/tabbar.js';
 import { applyPalette } from './ui/palette.js';
+import { enableSwipes } from './ui/swipe.js';
 
 // Resolves once the launch intro has finished (see index.html).
 export const introDone = window.__introDone || Promise.resolve();
@@ -49,6 +50,9 @@ const route = () => {
 
 mountTabs(tabs, TABS);
 
+let swipeDir = 0; // set by a swipe so the next screen slides in
+enableSwipes(view, { go: (hash, dir) => { swipeDir = dir; location.hash = hash; } });
+
 let token = 0;
 let lastRoute = null;
 
@@ -86,8 +90,11 @@ async function render() {
     return;
   }
 
-  // New screen: a page transition in the direction of travel.
-  const kind = navKind(lastRoute, r);
+  // New screen. Tab changes are instant, as on iOS; swipes slide; opening
+  // and closing things use a page transition.
+  const kind = swipeDir ? 'swipe' : navKind(lastRoute, r);
+  const dir = swipeDir;
+  swipeDir = 0;
   lastRoute = key;
   const swap = () => {
     clear(view).append(...frag.childNodes);
@@ -96,7 +103,12 @@ async function render() {
     watchTitle();
   };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (document.startViewTransition && !reduce && kind !== 'none') {
+  if (kind === 'swipe') {
+    swap();
+    view.classList.remove('slide-l', 'slide-r');
+    void view.offsetWidth;
+    view.classList.add(dir > 0 ? 'slide-r' : 'slide-l');
+  } else if (document.startViewTransition && !reduce && (kind === 'forward' || kind === 'back')) {
     document.documentElement.dataset.nav = kind;
     const t = document.startViewTransition(swap);
     t.finished.finally(() => {
@@ -105,7 +117,7 @@ async function render() {
     });
   } else {
     swap();
-    if (kind === 'forward' || kind === 'back') {
+    if (!reduce && (kind === 'forward' || kind === 'back')) {
       view.classList.remove('slide-l', 'slide-r');
       void view.offsetWidth;
       view.classList.add(kind === 'forward' ? 'slide-r' : 'slide-l');
@@ -116,12 +128,11 @@ async function render() {
 const DEPTH = { item: 1, add: 1, build: 1, edit: 2 };
 const tabOf = (name) => TABS.findIndex(([, , owns]) => owns.includes(name));
 
-// 'forward' (deeper or a tab to the right), 'back', 'fade' or 'none'.
+// 'tab' (different section), 'forward' (deeper), 'back', 'fade' or 'none'.
 function navKind(prevKey, r) {
   if (!prevKey) return 'none';
   const prev = prevKey.split('/')[0];
-  const dt = tabOf(r.name) - tabOf(prev);
-  if (dt) return dt > 0 ? 'forward' : 'back';
+  if (tabOf(r.name) !== tabOf(prev)) return 'tab';
   const dd = (DEPTH[r.name] || 0) - (DEPTH[prev] || 0);
   if (dd) return dd > 0 ? 'forward' : 'back';
   return 'fade';

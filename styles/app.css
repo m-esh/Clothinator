@@ -827,8 +827,8 @@ details.more summary::-webkit-details-marker { display: none; }
 .tab-pill.tracking { transition: scale 0.35s cubic-bezier(0.3, 1.6, 0.5, 1), background 0.25s, width 0.3s; }
 
 /* page change: slide in from the direction of travel */
-#view.slide-r { animation: from-right 0.32s cubic-bezier(0.2, 0.8, 0.3, 1); }
-#view.slide-l { animation: from-left 0.32s cubic-bezier(0.2, 0.8, 0.3, 1); }
+#view.slide-r { animation: from-right 0.3s cubic-bezier(0.2, 0.8, 0.3, 1); }
+#view.slide-l { animation: from-left 0.3s cubic-bezier(0.2, 0.8, 0.3, 1); }
 @keyframes from-right { from { transform: translateX(28px); opacity: 0; } }
 @keyframes from-left { from { transform: translateX(-28px); opacity: 0; } }
 
@@ -865,9 +865,9 @@ details.more summary::-webkit-details-marker { display: none; }
 .alt:active { opacity: 0.6; }
 
 /* New outfit pieces settle in one after another; unchanged ones stay put. */
-.board .tile { animation: tile-in 0.42s var(--spring) both; animation-delay: calc(var(--i, 0) * 45ms); }
+.board .tile.enter { animation: tile-in 0.42s var(--spring) both; animation-delay: calc(var(--i, 0) * 45ms); }
 @keyframes tile-in { from { opacity: 0; transform: translateY(10px) scale(0.96); } }
-.board .tile.add { animation-delay: 0.25s; }
+.board .tile.add.enter { animation-delay: 0.25s; }
 
 /* Placeholder while the first outfit is worked out */
 .tile.placeholder { animation: none; background: var(--board); position: relative; overflow: hidden; }
@@ -881,11 +881,11 @@ details.more summary::-webkit-details-marker { display: none; }
 @keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 
 /* Lists and cards appear softly when they're new */
-.list li, .grid .card, .why li { animation: fade-up 0.35s var(--ease-out) both; }
+.list li.enter, .grid .card.enter, .why li.enter { animation: fade-up 0.35s var(--ease-out) both; }
 @keyframes fade-up { from { opacity: 0; transform: translateY(6px); } }
 
 /* The temperature line draws itself in */
-.wx-line { stroke-dasharray: 1; animation: draw 0.9s var(--ease-out) both; }
+.wx.enter .wx-line { stroke-dasharray: 1; animation: draw 0.9s var(--ease-out) both; }
 @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 
 /* Mode tiles: colour change eases, selection springs */
@@ -1286,3 +1286,6 @@ select.input { border: 0; }
 
 .label .glyph { margin-right: 4px; }
 .list .tiny { color: var(--ink-3); }
+
+/* swipes: the page is moved by script while a finger is down */
+#view { will-change: auto; touch-action: pan-y; }

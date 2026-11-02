@@ -58,7 +58,7 @@ export function morph(from, to) {
   let i = 0;
   for (const nb of next) {
     const na = from.childNodes[i];
-    if (!na) { from.appendChild(nb); i++; continue; }
+    if (!na) { from.appendChild(enter(nb)); i++; continue; }
     if (same(na, nb)) { patch(na, nb); i++; continue; }
     // A keyed node that moved: find it further along and bring it here.
     const k = keyOf(nb);
@@ -70,10 +70,18 @@ export function morph(from, to) {
       }
     }
     if (found) { from.insertBefore(found, na); patch(found, nb); }
-    else from.insertBefore(nb, na);
+    else from.insertBefore(enter(nb), na);
     i++;
   }
   while (from.childNodes.length > i) from.lastChild.remove();
+}
+
+// New content arriving on a screen you're already looking at gets `.enter`,
+// which is what the entrance animations key off. Whole new screens don't,
+// so switching sections never replays them.
+function enter(n) {
+  if (n.nodeType === 1) n.classList.add('enter');
+  return n;
 }
 
 function patch(a, b) {
@@ -82,6 +90,7 @@ function patch(a, b) {
     return;
   }
   // attributes
+  const entering = a.classList?.contains('enter');
   // A photo still loading in the new tree must not blank the one on screen.
   const keepSrc = a.nodeName === 'IMG' && !b.hasAttribute('src') && a.getAttribute('data-photo') === b.getAttribute('data-photo');
   for (const { name } of [...a.attributes]) {
@@ -94,6 +103,9 @@ function patch(a, b) {
     if (a.nodeName === 'DETAILS' && name === 'open') continue; // user's choice wins
     if (a.getAttribute(name) !== value) a.setAttribute(name, value);
   }
+  // Keep an entrance animation running across re-renders: the attribute
+  // sync above would otherwise strip `.enter` mid-animation.
+  if (entering) a.classList.add('enter');
   // handlers
   if (b.__on) {
     for (const type of Object.keys(b.__on)) if (!a.__on?.[type]) a.addEventListener(type, dispatch);

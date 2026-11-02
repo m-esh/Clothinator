@@ -78,6 +78,27 @@ export function updateTabs(routeName, counts = {}) {
   return dir;
 }
 
+// A swipe in progress: slide the highlight part-way toward a neighbour.
+// `progress` is -1…1 (negative = towards the previous tab).
+export function previewTabs(progress) {
+  if (!pill || current < 0) return;
+  const to = current + Math.sign(progress);
+  if (to < 0 || to >= links.length) return;
+  const a = geometry(current), b = geometry(to);
+  const t = Math.min(1, Math.abs(progress));
+  pill.classList.add('tracking');
+  pill.style.transform = `translateX(${a.x + (b.x - a.x) * t}px)`;
+}
+
+export function endPreview() {
+  if (!pill) return;
+  pill.classList.remove('tracking');
+  place(current, true);
+}
+
+export const tabIndex = () => current;
+export const tabKeys = () => tabs.map(([key]) => key);
+
 function geometry(i) {
   const a = links[i];
   return { x: a.offsetLeft, w: a.offsetWidth };
