@@ -9,6 +9,7 @@ import { renderAdd } from './ui/add.js';
 import { renderOutfits, renderBuilder } from './ui/outfits.js';
 import { renderLaundry } from './ui/laundry.js';
 import { renderSettings } from './ui/settings.js';
+import { renderLeaderboard } from './ui/leaderboard.js';
 import { mountTabs, updateTabs } from './ui/tabbar.js';
 import { applyPalette } from './ui/palette.js';
 import { enableSwipes } from './ui/swipe.js';
@@ -41,6 +42,7 @@ const TABS = [
   ['outfits', 'Outfits', ['outfits', 'build']],
   ['laundry', 'Laundry', ['laundry']],
   ['settings', 'Settings', ['settings']],
+  ['leaderboard', 'Leaders', ['leaderboard']],
 ];
 
 const route = () => {
@@ -74,6 +76,7 @@ async function render() {
     case 'build': renderBuilder(frag, rerender, r.arg); break;
     case 'laundry': renderLaundry(frag, rerender); break;
     case 'settings': renderSettings(frag, rerender); break;
+    case 'leaderboard': renderLeaderboard(frag, rerender); break;
     default: await renderToday(frag, rerender);
   }
   if (my !== token) return; // a newer render started meanwhile

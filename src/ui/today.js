@@ -12,10 +12,11 @@ import { describe, labelParts, toUnit } from '../core/weather.js';
 import { isoDate, isWeekend, weekModes, fancyNudge } from '../core/week.js';
 import { stats } from '../core/catalog.js';
 import { openWeather } from './weather-sheet.js';
+import { pickHair, DEFAULT_STYLES } from '../core/hair.js';
 
 // Morning session: survives closing the app, resets the next day.
 let S = null;
-const fresh = (date) => ({ date, mode: null, skip: [], custom: null, weekend: false, changing: false });
+const fresh = (date) => ({ date, mode: null, skip: [], custom: null, weekend: false, changing: false, hairOffset: 0 });
 
 let W = { status: 'idle', summary: null, place: null, error: null, date: null };
 
@@ -150,7 +151,7 @@ export async function renderToday(root, rerender) {
       Object.values(MODES).map((m) => h('button', {
         class: `mode-tile mode-${m.key}`,
         'aria-pressed': String(S.mode === m.key),
-        onclick: () => { if (S.mode !== m.key) { S.mode = m.key; S.custom = null; S.skip = []; saveSession(); rerender(); } },
+        onclick: () => { if (S.mode !== m.key) { S.mode = m.key; S.custom = null; S.skip = []; S.hairOffset = 0; saveSession(); rerender(); } },
       }, h('span', { class: 'mode-dot' }), h('b', null, m.label)))),
     nudge && h('div', { class: 'nudge' }, nudge),
   ));
@@ -336,6 +337,13 @@ function pickView(today, rerender, worn) {
     onAdd: () => addSheet(outfit, rerender),
   }));
 
+  const hair = todaysHair(today);
+  if (hair) {
+    wrap.append(h('ul', { class: 'list hair-row' }, h('li', null,
+      h('div', { class: 'main' }, h('div', { class: 'tiny' }, 'Hair'), h('div', null, hair.name)),
+      h('button', { class: 'link', onclick: () => { S.hairOffset = (S.hairOffset || 0) + 1; saveSession(); rerender(); } }, 'Change'))));
+  }
+
   const good = notes.filter((n) => n.tone === 'good').slice(0, 3);
   const tips = notes.filter((n) => n.tone === 'tip');
   const bad = notes.filter(isProblem);
@@ -354,7 +362,7 @@ function pickView(today, rerender, worn) {
   const saved = store.findSaved(ids);
   wrap.append(h('div', { class: 'actions' },
     h('button', { class: 'btn', onclick: async () => {
-      const w = await store.logWear(ids, S.mode, { date: today, weather: W.summary });
+      const w = await store.logWear(ids, S.mode, { date: today, weather: W.summary, hair: todaysHair(today)?.id });
       S.changing = false;
       S.custom = null;
       saveSession();
@@ -400,11 +408,22 @@ function closetGaps(items, w, mode) {
 
 const listJoin = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a.at(-1)}`);
 
+const hairName = (id) => (state.prefs.hair?.styles || DEFAULT_STYLES).find((s) => s.id === id)?.name || 'Hairstyle';
+
+// Today's hairstyle, when hair is switched on in Settings.
+function todaysHair(today) {
+  const hair = state.prefs.hair;
+  if (!hair?.on) return null;
+  return pickHair(hair.styles || DEFAULT_STYLES, { mode: S.mode, weather: W.summary, today, wears: state.wears, offset: S.hairOffset || 0 });
+}
+
 function wornView(worn, rerender) {
   const pieces = worn.itemIds.map(store.itemById).filter(Boolean);
   return h('section', null,
     h('div', { class: 'worn-tag' }, 'Wearing today'),
     board(assemble(pieces)),
+    worn.hair && state.prefs.hair?.on ? h('ul', { class: 'list hair-row' }, h('li', null,
+      h('div', { class: 'main' }, h('div', { class: 'tiny' }, 'Hair'), h('div', null, hairName(worn.hair))))) : null,
     h('div', { class: 'row', style: { marginTop: '16px' } },
       h('button', { class: 'btn ghost', onclick: () => { S.changing = true; saveSession(); rerender(); } }, 'Change'),
       h('button', { class: 'link', onclick: () => store.undoWear(worn.id) }, 'Undo'),

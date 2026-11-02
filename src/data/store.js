@@ -24,6 +24,7 @@ const DEFAULT_PREFS = {
   neverPairs: [],
   location: null, // null = use the phone's location
   palette: 'graphite',
+  hair: { on: false, styles: null }, // styles: null = not set up yet
   lastBackupAt: null,
   backupSnoozedAt: null,
   createdAt: null,
@@ -119,11 +120,17 @@ export async function deleteItem(id) {
 
 // ── laundry ─────────────────────────────────────────────────
 
+// Returns an undo function that puts every touched item back exactly as it
+// was (including its since-wash count, which "clean" resets).
+const LAUNDRY_FIELDS = ['inLaundry', 'laundrySince', 'wearsSinceWash', 'lastWashed'];
+
 export async function setLaundry(ids, inLaundry) {
   const today = isoDate();
+  const before = [];
   for (const id of ids) {
     const i = itemById(id);
     if (!i || i.inLaundry === inLaundry) continue;
+    before.push([i, Object.fromEntries(LAUNDRY_FIELDS.map((k) => [k, i[k]]))]);
     i.inLaundry = inLaundry;
     if (inLaundry) i.laundrySince = today;
     else {
@@ -134,6 +141,29 @@ export async function setLaundry(ids, inLaundry) {
     await db.put('items', i);
   }
   emit();
+  return async () => {
+    for (const [i, snap] of before) {
+      for (const k of LAUNDRY_FIELDS) {
+        if (snap[k] === undefined) delete i[k];
+        else i[k] = snap[k];
+      }
+      await db.put('items', i);
+    }
+    emit();
+  };
+}
+
+// Correct an item's counts by hand. Keeps them consistent: since-wash can't
+// exceed the total.
+export async function setCounts(id, { wears, wearsSinceWash, lastWorn }) {
+  const i = itemById(id);
+  if (!i) return;
+  i.wears = Math.max(0, Math.round(wears));
+  i.wearsSinceWash = Math.min(i.wears, Math.max(0, Math.round(wearsSinceWash)));
+  i.lastWorn = lastWorn || null;
+  i.countsEdited = Date.now();
+  await db.put('items', i);
+  emit();
 }
 
 // ── wearing ─────────────────────────────────────────────────
@@ -142,11 +172,11 @@ export const wearsOn = (date) => state.wears.filter((w) => w.date === date);
 
 // Log an outfit as worn. A second log on the same day replaces the first
 // (you changed your mind), so counts never double up.
-export async function logWear(itemIds, mode, { date = isoDate(), weather = null, learnFrom = true } = {}) {
+export async function logWear(itemIds, mode, { date = isoDate(), weather = null, learnFrom = true, hair = null } = {}) {
   for (const w of wearsOn(date)) await undoWear(w.id, false);
   const pieces = itemIds.map(itemById).filter(Boolean);
   const outfit = assemble(pieces);
-  const wear = { id: uid(), date, at: Date.now(), itemIds: pieces.map((i) => i.id), combo: comboKey(outfit), mode, weather };
+  const wear = { id: uid(), date, at: Date.now(), itemIds: pieces.map((i) => i.id), combo: comboKey(outfit), mode, weather, ...(hair ? { hair } : {}) };
   for (const i of pieces) {
     i.wears = (i.wears || 0) + 1;
     i.wearsSinceWash = (i.wearsSinceWash || 0) + 1;

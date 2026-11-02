@@ -5,7 +5,7 @@ import { board, miniBoard, itemPic, displayName } from './board.js';
 import * as store from '../data/store.js';
 import { state } from '../data/store.js';
 import { assemble } from '../core/generate.js';
-import { evaluate, MODES, isProblem } from '../core/rules.js';
+import { evaluate, MODES, isProblem, formalityOf } from '../core/rules.js';
 import { CATEGORIES, stats } from '../core/catalog.js';
 import { isoDate } from '../core/week.js';
 
@@ -21,18 +21,38 @@ export function renderOutfits(root) {
     return;
   }
 
-  root.append(h('ul', { class: 'list' }, state.outfits.map((o) => {
+  // Grouped by how dressy each outfit actually is (the same scoring the
+  // suggestions use), dressiest first within each group.
+  const rows = state.outfits.map((o) => {
     const pieces = o.itemIds.map(store.itemById).filter(Boolean);
-    const ev = evaluate(assemble(pieces), { mode: o.mode || 'casual', prefs: state.prefs });
-    const warns = ev.notes.filter(isProblem).length;
-    const out = pieces.filter((p) => p.inLaundry).length;
-    return h('li', { style: { display: 'block', cursor: 'pointer' }, onclick: () => outfitSheet(o) },
-      miniBoard(pieces),
-      h('div', { class: 'row between', style: { marginTop: '8px' } },
-        h('span', { class: 'small' }, o.name || describe(pieces)),
-        h('span', { class: 'tiny faint' }, [o.mode && MODES[o.mode]?.label, out ? `${out} in laundry` : null, warns ? `${warns} warning${warns > 1 ? 's' : ''}` : null].filter(Boolean).join(' · '))));
-  })));
+    const fit = assemble(pieces);
+    return { o, pieces, f: formalityOf(fit), ev: evaluate(fit, { mode: o.mode || 'casual', prefs: state.prefs }) };
+  });
+  for (const band of BANDS) {
+    const list = rows.filter((r) => band.test(r.f)).sort((a, b) => b.f - a.f);
+    if (!list.length) continue;
+    root.append(h('section', { key: band.key },
+      h('div', { class: 'label row', style: { gap: '7px' } }, h('i', { class: `band-dot mode-${band.key}` }), `${band.label} · ${list.length}`),
+      h('ul', { class: 'list' }, list.map(({ o, pieces, f, ev }) => {
+        const warns = ev.notes.filter(isProblem).length;
+        const out = pieces.filter((p) => p.inLaundry).length;
+        return h('li', { key: o.id, style: { display: 'block', cursor: 'pointer' }, onclick: () => outfitSheet(o) },
+          miniBoard(pieces),
+          h('div', { class: 'row between', style: { marginTop: '8px' } },
+            h('span', { class: 'small' }, o.name || describe(pieces)),
+            h('span', { class: 'row', style: { gap: '8px' } },
+              h('span', { class: 'tiny faint' }, [out ? `${out} in laundry` : null, warns ? `${warns} warning${warns > 1 ? 's' : ''}` : null].filter(Boolean).join(' · ')),
+              h('span', { class: 'meter mini', title: `Dressiness ${f.toFixed(1)} of 5` }, h('span', { style: { width: `${(f / 5) * 100}%` } })))));
+      }))));
+  }
 }
+
+// Dressiness bands, from the 0 (gym) … 5 (black tie) scale.
+const BANDS = [
+  { key: 'fancy', label: 'Fancy', test: (f) => f >= 3.2 },
+  { key: 'casual', label: 'Casual', test: (f) => f >= 1.8 && f < 3.2 },
+  { key: 'comfy', label: 'Comfy', test: (f) => f < 1.8 },
+];
 
 const describe = (pieces) => pieces.filter((p) => ['top', 'bottom', 'onepiece'].includes(stats(p).cat)).map(displayName).join(', ');
 

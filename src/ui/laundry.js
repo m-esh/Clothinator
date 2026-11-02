@@ -19,8 +19,8 @@ export function renderLaundry(root) {
     h('div', null, h('h1', null, 'Laundry'), h('div', { class: 'sub faint small num' }, `${inWash.length} in the wash`)),
     inWash.length ? h('button', { class: 'btn small', onclick: async () => {
       const ids = inWash.map((i) => i.id);
-      await store.setLaundry(ids, false);
-      toast(`${ids.length} piece${ids.length === 1 ? '' : 's'} back in the closet`, { label: 'Undo', run: () => store.setLaundry(ids, true) });
+      const undo = await store.setLaundry(ids, false);
+      toast(`${ids.length} piece${ids.length === 1 ? '' : 's'} back in the closet`, { label: 'Undo', run: undo });
     } }, 'Laundry done') : null));
 
   root.append(h('section', null,
@@ -28,7 +28,7 @@ export function renderLaundry(root) {
     inWash.length
       ? h('ul', { class: 'list' }, inWash.map((i) => row(i, today,
         `${i.wearsSinceWash || 0} wear${i.wearsSinceWash === 1 ? '' : 's'} before washing${i.laundrySince ? ` · in since ${shortDate(i.laundrySince, today)}` : ''}`,
-        h('button', { class: 'btn ghost small', onclick: () => store.setLaundry([i.id], false) }, 'Clean'))))
+        h('button', { class: 'btn ghost small', onclick: () => laundry(i, false) }, 'Clean'))))
       : h('p', { class: 'muted small' }, 'Nothing in the wash.')));
 
   root.append(h('section', null,
@@ -36,8 +36,13 @@ export function renderLaundry(root) {
     worn.length
       ? h('ul', { class: 'list' }, worn.map((i) => row(i, today,
         `${i.wearsSinceWash} wear${i.wearsSinceWash === 1 ? '' : 's'} since washed · last ${shortDate(i.lastWorn, today)}`,
-        h('button', { class: 'btn ghost small', onclick: () => store.setLaundry([i.id], true) }, 'Wash'))))
+        h('button', { class: 'btn ghost small', onclick: () => laundry(i, true) }, 'Wash'))))
       : h('p', { class: 'muted small' }, 'Nothing worn since its last wash.')));
+}
+
+async function laundry(i, inWash) {
+  const undo = await store.setLaundry([i.id], inWash);
+  toast(inWash ? `${displayName(i)} in the wash` : `${displayName(i)} is clean`, { label: 'Undo', run: undo });
 }
 
 function row(i, today, sub, action) {

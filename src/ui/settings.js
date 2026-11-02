@@ -1,6 +1,6 @@
 // Settings: weather, preferences, the on-phone models, backups.
 
-import { h, sheet, toast, confirmSheet } from './dom.js';
+import { h, sheet, toast, confirmSheet, toggle } from './dom.js';
 import { itemPic, displayName } from './board.js';
 import * as store from '../data/store.js';
 import { state } from '../data/store.js';
@@ -8,6 +8,7 @@ import { geocode } from '../core/weather.js';
 import { exportBackup, importBackup } from '../data/backup.js';
 import { invalidateWeather } from './today.js';
 import { PALETTES } from './palette.js';
+import { DEFAULT_STYLES } from '../core/hair.js';
 
 let models = null; // { background, classify } once checked
 let downloading = null;
@@ -82,6 +83,25 @@ export function renderSettings(root, rerender) {
         state.model.n ? h('button', { class: 'link danger', onclick: () => confirmSheet('Forget learned taste?', 'Suggestions go back to rules only. Your closet, outfits and wear counts stay.', 'Forget', () => store.resetTaste(), { danger: true }) }, 'Reset') : null),
     ),
     h('p', { class: 'tiny faint', style: { padding: '0 16px', marginTop: '7px' } }, 'Set favourites and hidden items on each item\'s page.'),
+  ));
+
+  // ── hair ──
+  const hair = p.hair || { on: false, styles: null };
+  const styles = hair.styles || DEFAULT_STYLES;
+  const setHair = (patch) => store.updatePrefs({ hair: { ...hair, styles, ...patch } });
+  root.append(h('section', null,
+    h('div', { class: 'label' }, 'Hair'),
+    h('ul', { class: 'list' },
+      h('li', null,
+        h('div', { class: 'main' }, h('div', null, 'Include a hairstyle'), h('div', { class: 'tiny' }, 'Suggested with each outfit')),
+        toggle(hair.on, (v) => setHair({ on: v }), 'Include a hairstyle')),
+      hair.on ? styles.map((st) => h('li', { key: st.id },
+        h('div', { class: 'main' },
+          h('div', null, st.name),
+          h('div', { class: 'tiny' }, [st.modes.map((m) => m[0].toUpperCase() + m.slice(1)).join(', '), st.weatherProof ? 'holds up in wind and rain' : null].filter(Boolean).join(' · '))),
+        h('button', { class: 'link small danger', onclick: () => setHair({ styles: styles.filter((x) => x.id !== st.id) }) }, 'Remove'))) : null,
+      hair.on ? h('li', null, h('button', { class: 'link', onclick: () => hairSheet(styles, setHair) }, 'Add a hairstyle')) : null,
+    ),
   ));
 
   // ── models ──
@@ -193,5 +213,28 @@ function pairSheet() {
       close();
       toast('Got it, never together');
     } }, h('div', { class: 'pic' }, itemPic(i)), h('div', { class: 't' }, displayName(i))))),
+  ));
+}
+
+function hairSheet(styles, setHair) {
+  const d = { name: '', modes: ['casual'], weatherProof: false };
+  sheet('New hairstyle', (close, redraw) => h('div', null,
+    h('label', { class: 'field' }, h('span', { class: 'label' }, 'Name'),
+      h('input', { class: 'input', placeholder: 'e.g. Curtain bangs', value: d.name, oninput: (e) => { d.name = e.target.value; } })),
+    h('div', { class: 'field' }, h('span', { class: 'label' }, 'Good for'),
+      h('div', { class: 'chips' }, ['fancy', 'casual', 'comfy'].map((m) => h('button', {
+        class: 'chip', 'aria-pressed': String(d.modes.includes(m)),
+        onclick: () => { d.modes = d.modes.includes(m) ? d.modes.filter((x) => x !== m) : [...d.modes, m]; redraw(); },
+      }, m[0].toUpperCase() + m.slice(1))))),
+    h('ul', { class: 'list', style: { marginTop: '16px' } }, h('li', null,
+      h('div', { class: 'main' }, 'Holds up in wind and rain'),
+      toggle(d.weatherProof, (v) => { d.weatherProof = v; redraw(); }, 'Holds up in wind and rain'))),
+    h('button', { class: 'btn block', style: { marginTop: '18px' }, onclick: () => {
+      const name = d.name.trim();
+      if (!name) { toast('Give it a name'); return; }
+      if (!d.modes.length) { toast('Pick at least one mood'); return; }
+      setHair({ styles: [...styles, { id: `h${Date.now().toString(36)}`, name, modes: d.modes, weatherProof: d.weatherProof }] });
+      close();
+    } }, 'Add'),
   ));
 }

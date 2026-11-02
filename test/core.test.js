@@ -315,3 +315,17 @@ test('one top does not reappear day after day under different sweaters', () => {
   const max = Math.max(...seen.values());
   assert.ok(max <= 3, `a piece appeared ${max} times in 5 fancy days`);
 });
+
+test('hairstyles: fit the mood, hold up in bad weather, rotate', async () => {
+  const { pickHair, DEFAULT_STYLES } = await import('../src/core/hair.js');
+  const fancy = pickHair(DEFAULT_STYLES, { mode: 'fancy', today: '2026-11-03' });
+  assert.ok(fancy.modes.includes('fancy'));
+  for (let k = 0; k < 6; k++) {
+    const wet = pickHair(DEFAULT_STYLES, { mode: 'casual', weather: rainy, today: `2026-11-1${k}` });
+    assert.ok(wet.weatherProof, `rain day ${k}: ${wet.name}`);
+  }
+  const a = pickHair(DEFAULT_STYLES, { mode: 'casual', today: '2026-11-03' });
+  const b = pickHair(DEFAULT_STYLES, { mode: 'casual', today: '2026-11-03', offset: 1 });
+  assert.notEqual(a.id, b.id, 'Change gives a different style');
+  assert.equal(pickHair([], { mode: 'casual', today: '2026-11-03' }), null);
+});

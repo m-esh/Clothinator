@@ -66,6 +66,20 @@ Nothing is marked dirty automatically. In **Laundry** you send things to the
 wash and press **Laundry done** to bring them all back. Pieces in the wash
 are never suggested.
 
+## Outfits, counts and the leaderboard
+
+- **Outfits** are grouped into Fancy, Casual and Comfy by how dressy they
+  actually are, dressiest first.
+- **Wear counts** can be corrected by hand: tap the stats on an item's page
+  to set times worn, wears since washing and the last-worn date.
+- **Laundry** actions (wash, clean, laundry done) all have Undo, which puts
+  the since-wash count back too.
+- **Leaders** (the last tab) is just for fun: most worn clothes and outfits,
+  your mood split, streaks, fun facts and what's gathering dust.
+- **Hair** (Settings, off by default): keep a list of hairstyles tagged with
+  the moods they suit; Today suggests one with the outfit, prefers styles
+  that hold up in wind and rain, avoids repeating yesterday's, and logs it.
+
 ## Backups
 
 Everything lives on the phone. Settings → **Save a backup** writes one file

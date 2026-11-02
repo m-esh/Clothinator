@@ -3,7 +3,7 @@
 // library itself. Weather always goes to the network (the app keeps its own
 // last-known copy).
 
-const VERSION = 'v21';
+const VERSION = 'v22';
 const SHELL = `clothinator-shell-${VERSION}`;
 const RUNTIME = 'clothinator-runtime';
 
@@ -16,7 +16,7 @@ const FILES = [
   'src/data/db.js', 'src/data/store.js', 'src/data/backup.js', 'src/data/weather-service.js',
   'src/core/catalog.js', 'src/core/color.js', 'src/core/rules.js', 'src/core/generate.js',
   'src/core/taste.js', 'src/core/weather.js', 'src/core/week.js',
-  'src/vision/pixels.js', 'src/vision/photo.js', 'src/vision/ai.js', 'src/ui/glyphs.js', 'src/ui/silhouettes.js', 'src/ui/tabbar.js', 'src/ui/palette.js', 'src/ui/weather-sheet.js', 'src/ui/swipe.js',
+  'src/vision/pixels.js', 'src/vision/photo.js', 'src/vision/ai.js', 'src/ui/glyphs.js', 'src/ui/silhouettes.js', 'src/ui/tabbar.js', 'src/ui/palette.js', 'src/ui/weather-sheet.js', 'src/ui/swipe.js', 'src/ui/leaderboard.js', 'src/core/hair.js',
 ];
 
 self.addEventListener('install', (e) => {

@@ -1296,3 +1296,41 @@ select.input { border: 0; }
 
 .banner.struggle { display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px; }
 .banner.struggle b { font-weight: 600; }
+
+/* item page: the stats card opens the counts editor */
+button.stats { appearance: none; width: 100%; text-align: left; color: inherit; font: inherit; padding: 0; cursor: pointer; }
+button.stats:active { opacity: 0.7; }
+
+/* outfits grouped by dressiness */
+.band-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--c, var(--ink-3)); }
+.band-dot.mode-fancy { --c: var(--fancy); }
+.band-dot.mode-casual { --c: var(--casual); }
+.band-dot.mode-comfy { --c: var(--comfy); }
+.meter.mini { width: 44px; height: 4px; display: inline-block; flex: none; }
+button.stats { position: relative; }
+button.stats::after { content: ""; position: absolute; top: 14px; right: 14px; width: 7px; height: 7px; border-right: 2px solid var(--ink-3); border-top: 2px solid var(--ink-3); transform: rotate(45deg); }
+
+/* six tabs: tighten the labels a touch */
+.tabs { width: min(460px, calc(100% - var(--gutter-l) - var(--gutter-r))); padding: 4px; }
+.tabs a { font-size: 9.5px; }
+.tab-icon { width: 23px; height: 23px; }
+
+/* leaderboard */
+.lb-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 24px; }
+.lb-stats div { background: var(--board); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lb-stats b { font: 700 26px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.lb-stats span { font-size: 12px; color: var(--ink-3); line-height: 1.25; }
+.lb-rank { width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 600 13px var(--body); color: var(--ink-2); background: var(--board-2); font-variant-numeric: tabular-nums; }
+.lb-rank.medal-1 { background: #e3bf72; color: #1a1408; }
+.lb-rank.medal-2 { background: #c7cbd3; color: #15171b; }
+.lb-rank.medal-3 { background: #c98b5a; color: #1a0f07; }
+.lb-count { font: 600 17px var(--body); font-variant-numeric: tabular-nums; min-width: 28px; text-align: right; }
+.meter.lb-bar { display: block; margin-top: 6px; height: 4px; }
+.lb-moods { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; margin: 0 0 10px; }
+.lb-moods span { flex-basis: 0; background: var(--c); }
+.lb-moods .mode-fancy { --c: var(--fancy); }
+.lb-moods .mode-casual { --c: var(--casual); }
+.lb-moods .mode-comfy { --c: var(--comfy); }
+
+.hair-row { margin-top: 8px; }
+.hair-row li { min-height: 54px; }

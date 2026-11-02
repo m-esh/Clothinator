@@ -1,6 +1,6 @@
 // Closet: everything you own, and each item's page.
 
-import { h, toast, confirmSheet, shortDate, toggle } from './dom.js';
+import { h, toast, confirmSheet, shortDate, toggle, sheet, stepper } from './dom.js';
 import { itemPic, displayName, miniBoard } from './board.js';
 import * as store from '../data/store.js';
 import { state } from '../data/store.js';
@@ -86,14 +86,14 @@ export function renderItem(root, id) {
         (i.colors || []).map((c) => h('span', { class: 'chip', style: { pointerEvents: 'none' } }, h('span', { class: 'swatch', style: { background: COLOR[c.name]?.hex || c.hex } }), c.name)))),
     h('div', { class: 'list meters', 'aria-label': 'Measurements' },
       tape('Dressy', s.formality), tape('Warmth', s.warmth), tape('Comfort', s.comfort)),
-    h('div', { class: 'stats' },
+    h('button', { class: 'stats', 'aria-label': 'Edit wear counts', onclick: () => countsSheet(i) },
       h('div', null, h('span', { class: 'label' }, 'Worn'), h('b', null, i.wears || 0)),
       h('div', null, h('span', { class: 'label' }, 'Since wash'), h('b', null, i.wearsSinceWash || 0)),
       h('div', null, h('span', { class: 'label' }, 'Last worn'), h('b', { style: { fontSize: '18px', paddingTop: '4px' } }, shortDate(i.lastWorn, today)))),
     h('div', { class: 'stack' },
       h('button', { class: i.inLaundry ? 'btn block' : 'btn ghost block', onclick: async () => {
-        await store.setLaundry([id], !i.inLaundry);
-        toast(i.inLaundry ? 'In the laundry' : 'Back in the closet, wash count reset');
+        const undo = await store.setLaundry([id], !i.inLaundry);
+        toast(i.inLaundry ? 'In the laundry' : 'Back in the closet, wash count reset', { label: 'Undo', run: undo });
       } }, i.inLaundry ? 'Take out of laundry (clean)' : 'Put in laundry'),
     ),
     h('ul', { class: 'list', style: { marginTop: '22px' } },
@@ -113,6 +113,29 @@ export function renderItem(root, id) {
 }
 
 // A tape measure from 0 to 5 with the value marked.
+// Fix the numbers by hand: total wears, since last wash, last worn.
+function countsSheet(i) {
+  const draft = { wears: i.wears || 0, wearsSinceWash: i.wearsSinceWash || 0, lastWorn: i.lastWorn || '' };
+  sheet('Wear counts', (close, redraw) => h('div', null,
+    h('ul', { class: 'list' },
+      h('li', null, h('div', { class: 'main' }, 'Times worn'),
+        stepper(draft.wears, { min: 0, max: 999, step: 1, onChange: (v) => { draft.wears = v; if (draft.wearsSinceWash > v) { draft.wearsSinceWash = v; redraw(); } } })),
+      h('li', null, h('div', { class: 'main' }, h('div', null, 'Since last wash'), h('div', { class: 'tiny' }, 'Can\'t be more than times worn')),
+        stepper(draft.wearsSinceWash, { min: 0, max: 999, step: 1, onChange: (v) => { draft.wearsSinceWash = Math.min(v, draft.wears); if (v > draft.wears) redraw(); } })),
+      h('li', null, h('div', { class: 'main' }, 'Last worn'),
+        h('input', { type: 'date', class: 'input', style: { width: '150px', height: '34px', fontSize: '15px' }, value: draft.lastWorn, max: isoDate(), oninput: (e) => { draft.lastWorn = e.target.value; } })),
+    ),
+    h('div', { class: 'row', style: { marginTop: '18px' } },
+      h('button', { class: 'btn grow', onclick: async () => {
+        const prev = { wears: i.wears || 0, wearsSinceWash: i.wearsSinceWash || 0, lastWorn: i.lastWorn || null };
+        await store.setCounts(i.id, draft);
+        close();
+        toast('Counts updated', { label: 'Undo', run: () => store.setCounts(i.id, prev) });
+      } }, 'Save'),
+      h('button', { class: 'btn ghost', onclick: close }, 'Cancel')),
+  ));
+}
+
 // A 0–5 meter, drawn as a filled capsule.
 function tape(label, value) {
   return h('div', { class: 'meter-row' },
