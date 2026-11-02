@@ -71,7 +71,7 @@ export function renderBuilder(root, rerender, editId = null) {
 
   root.append(
     h('div', { class: 'row between', style: { marginBottom: '14px' } },
-      h('a', { class: 'link small', href: '#outfits', onclick: () => { B = null; } }, '← Outfits')),
+      h('a', { class: 'link back', href: '#outfits', onclick: () => { B = null; } }, 'Outfits')),
     h('h1', { style: { marginBottom: '16px' } }, editId ? 'Edit outfit' : 'Build an outfit'),
     h('div', { class: 'seg quiet', style: { marginBottom: '16px' } },
       Object.values(MODES).map((m) => h('button', { 'aria-pressed': String(B.mode === m.key), onclick: () => { B.mode = m.key; rerender(); } }, m.label))),

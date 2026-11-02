@@ -16,6 +16,22 @@ import { applyPalette } from './ui/palette.js';
 export const introDone = window.__introDone || Promise.resolve();
 
 const view = document.getElementById('view');
+const navbar = document.getElementById('navbar');
+
+// iOS large titles: the page's big title scrolls away and a compact bar
+// with the same title fades in at the top.
+let titleObserver = null;
+function watchTitle() {
+  titleObserver?.disconnect();
+  const h1 = view.querySelector('h1');
+  navbar.textContent = h1 ? h1.textContent : '';
+  navbar.classList.remove('shown');
+  if (!h1) return;
+  titleObserver = new IntersectionObserver(([e]) => {
+    navbar.classList.toggle('shown', !e.isIntersecting && e.boundingClientRect.top < 0);
+  }, { rootMargin: '-44px 0px 0px 0px' });
+  titleObserver.observe(h1);
+}
 const tabs = document.getElementById('tabs');
 
 const TABS = [
@@ -65,6 +81,8 @@ async function render() {
   if (key === lastRoute) {
     morph(view, frag);
     updateTabs(r.name, counts);
+    const h1 = view.querySelector('h1');
+    if (h1 && navbar.textContent !== h1.textContent) watchTitle();
     return;
   }
 
@@ -75,6 +93,7 @@ async function render() {
     clear(view).append(...frag.childNodes);
     updateTabs(r.name, counts);
     window.scrollTo(0, 0);
+    watchTitle();
   };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (document.startViewTransition && !reduce && kind !== 'none') {

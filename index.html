@@ -32,7 +32,6 @@
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
   <link rel="preload" href="assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="assets/fonts/outfit.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles/app.css">
   <script type="module" src="src/app.js"></script>
 </head>
@@ -87,6 +86,7 @@
       setTimeout(remove, 3400); // never stay up, whatever happens to animations
     })();
   </script>
+  <div id="navbar" aria-hidden="true"></div>
   <main id="view"></main>
   <nav id="tabs" class="tabs glass" aria-label="Sections"></nav>
 </body>

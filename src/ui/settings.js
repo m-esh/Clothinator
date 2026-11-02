@@ -64,19 +64,24 @@ export function renderSettings(root, rerender) {
   const pairs = p.neverPairs.map(([a, b]) => [store.itemById(a), store.itemById(b)]).filter(([a, b]) => a && b);
   const blocked = state.items.filter((i) => i.blocked);
   const favs = state.items.filter((i) => i.favorite);
+  const names = (list) => (list.length ? list.map(displayName).join(', ') : 'None');
   root.append(h('section', null,
-    h('div', { class: 'label', style: { marginBottom: '8px' } }, 'Preferences'),
-    h('div', { class: 'row between', style: { marginTop: '14px' } }, h('h3', null, 'Never together'), h('button', { class: 'link small', onclick: () => pairSheet() }, 'Add a pair')),
-    pairs.length ? h('ul', { class: 'list', style: { marginTop: '8px' } }, pairs.map(([a, b], idx) => h('li', null,
-      h('div', { class: 'thumb' }, itemPic(a)), h('div', { class: 'thumb' }, itemPic(b)),
-      h('div', { class: 'main small' }, `${displayName(a)} + ${displayName(b)}`),
-      h('button', { class: 'link small', onclick: () => store.updatePrefs({ neverPairs: p.neverPairs.filter((_, j) => j !== idx) }) }, 'Remove'))))
-      : h('p', { class: 'small muted' }, 'None yet.'),
-    listOf('Favourites', favs, 'Mark favourites on an item\'s page.'),
-    listOf('Never suggested', blocked, 'Hide items from outfits on their page.'),
-    h('div', { class: 'row between', style: { marginTop: '18px' } },
-      h('div', null, h('h3', null, 'Learned taste'), h('div', { class: 'tiny faint num' }, `From ${state.model.n} choice${state.model.n === 1 ? '' : 's'} so far`)),
-      state.model.n ? h('button', { class: 'link small', onclick: () => confirmSheet('Forget learned taste?', 'Suggestions go back to rules only. Your closet, outfits and wear counts stay.', 'Forget', () => store.resetTaste(), { danger: true }) }, 'Reset') : null),
+    h('div', { class: 'label' }, 'Preferences'),
+    h('ul', { class: 'list' },
+      h('li', null,
+        h('div', { class: 'main' }, h('div', null, 'Never together'), h('div', { class: 'tiny' }, pairs.length ? `${pairs.length} pair${pairs.length === 1 ? '' : 's'}` : 'None')),
+        h('button', { class: 'link', onclick: () => pairSheet() }, 'Add')),
+      pairs.map(([a, b], idx) => h('li', { key: `${a.id}|${b.id}` },
+        h('div', { class: 'thumb' }, itemPic(a)), h('div', { class: 'thumb' }, itemPic(b)),
+        h('div', { class: 'main small' }, `${displayName(a)} + ${displayName(b)}`),
+        h('button', { class: 'link small danger', onclick: () => store.updatePrefs({ neverPairs: p.neverPairs.filter((_, j) => j !== idx) }) }, 'Remove'))),
+      h('li', null, h('div', { class: 'main' }, h('div', null, 'Favourites'), h('div', { class: 'tiny' }, names(favs)))),
+      h('li', null, h('div', { class: 'main' }, h('div', null, 'Never suggested'), h('div', { class: 'tiny' }, names(blocked)))),
+      h('li', null,
+        h('div', { class: 'main' }, h('div', null, 'Learned taste'), h('div', { class: 'tiny num' }, `From ${state.model.n} choice${state.model.n === 1 ? '' : 's'}`)),
+        state.model.n ? h('button', { class: 'link danger', onclick: () => confirmSheet('Forget learned taste?', 'Suggestions go back to rules only. Your closet, outfits and wear counts stay.', 'Forget', () => store.resetTaste(), { danger: true }) }, 'Reset') : null),
+    ),
+    h('p', { class: 'tiny faint', style: { padding: '0 16px', marginTop: '7px' } }, 'Set favourites and hidden items on each item\'s page.'),
   ));
 
   // ── models ──
@@ -131,13 +136,6 @@ export function renderSettings(root, rerender) {
 function hourSelect(value, onChange) {
   return h('select', { class: 'input', style: { width: '86px', height: '34px' }, onchange: (e) => onChange(Number(e.target.value)) },
     hours.map((x) => h('option', { value: x, selected: x === value }, hourLabel(x))));
-}
-
-function listOf(title, items, empty) {
-  return h('div', { style: { marginTop: '18px' } },
-    h('h3', null, title),
-    items.length ? h('div', { class: 'chips', style: { marginTop: '8px' } }, items.map((i) => h('a', { class: 'chip', href: `#item/${i.id}` }, displayName(i))))
-      : h('p', { class: 'small muted' }, empty));
 }
 
 async function download(rerender) {

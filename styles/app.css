@@ -4,19 +4,12 @@
    labels (mono, uppercase, tracked). The one bold thing is cobalt, used only
    for the action you take.                                                  */
 
-/* Fonts ship with the app (no Google Fonts round trip, so no fallback-font
-   flash, and they work offline). Unbounded: wide, round-ended geometric
-   display that echoes the C mark. Outfit: clean geometric text face. */
+/* The brand face ships with the app (no font request, no flash, works
+   offline). Unbounded: wide, round-ended, echoes the C mark. */
 @font-face {
   font-family: "Unbounded";
   src: url("../assets/fonts/unbounded.woff2") format("woff2");
   font-weight: 200 900;
-  font-display: block;
-}
-@font-face {
-  font-family: "Outfit";
-  src: url("../assets/fonts/outfit.woff2") format("woff2");
-  font-weight: 100 900;
   font-display: block;
 }
 
@@ -55,9 +48,12 @@
   --glass-pill: rgba(255, 255, 255, 0.1);
 
   /* type */
-  --display: "Unbounded", "Arial Rounded MT Bold", "Helvetica Neue", Arial, sans-serif;
-  --body: "Outfit", -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --label: "Outfit", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  /* Apple's system font (San Francisco) for the interface; the brand face
+     only for the wordmark. */
+  --display: -apple-system, "SF Pro Display", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --body: -apple-system, "SF Pro Text", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --label: var(--body);
+  --brand: "Unbounded", "Arial Rounded MT Bold", "Helvetica Neue", Arial, sans-serif;
 
   --tab-h: 62px;     /* floating bar height */
   --tab-gap: 10px;   /* space under it */
@@ -925,12 +921,12 @@ body:has(.sheet) { overflow: hidden; }
 
 :root[data-palette="graphite"] {
   /* matches a monochrome home screen: black glass, silver, quiet colour */
-  --cotton: #0a0a0b; --board: #151517; --board-2: #1f1f22;
-  --ink: #f0f0f2; --ink-2: #aeaeb4; --ink-3: #74747b; --seam: #2a2a2e;
+  --cotton: #000000; --board: #1c1c1e; --board-2: #2c2c2e;
+  --ink: #ffffff; --ink-2: #aeaeb2; --ink-3: #8d8d93; --seam: #38383a;
   --cobalt: #e9e9ec; --on-cobalt: #0a0a0b;
   --fancy: #d9c49a; --casual: #9fb4cf; --comfy: #c3b5d6; --on-mode: #0a0a0b;
-  --glow: rgba(255, 255, 255, 0.06);
-  --glass: rgba(34, 34, 38, 0.55); --glass-strong: rgba(28, 28, 31, 0.9);
+  --glow: transparent;
+  --glass: rgba(30, 30, 32, 0.6); --glass-strong: rgba(28, 28, 30, 0.94);
 }
 :root[data-palette="espresso"] {
   /* dark roast and leather: warm browns, cream thread */
@@ -1023,7 +1019,7 @@ body:has(.sheet) { overflow: hidden; }
 }
 /* 4. the name rises in */
 .intro-word {
-  font: 600 28px/1 var(--display);
+  font: 600 28px/1 var(--brand);
   letter-spacing: 0.01em;
   color: var(--ink);
   opacity: 0;
@@ -1083,3 +1079,206 @@ body:has(.sheet) { overflow: hidden; }
   background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
   animation: shimmer 1.2s linear infinite;
 }
+
+/* ══ Apple-clean pass ═════════════════════════════════════
+   iOS conventions throughout: system font, large titles, grouped inset
+   lists, switches, tinted text buttons, borderless filled surfaces,
+   sentence-case labels. Later rules here override earlier styling. */
+
+body { font-size: 17px; line-height: 1.4; background-image: none; letter-spacing: -0.01em; }
+#view { padding-block: calc(var(--safe-t) + 12px) calc(var(--tab-h) + var(--tab-gap) + var(--safe-b) + 40px); }
+
+h1 { font: 700 34px/1.12 var(--display); letter-spacing: 0.005em; }
+h2 { font: 600 20px/1.25 var(--display); letter-spacing: 0; }
+h3 { font: 600 17px/1.3 var(--body); }
+.page-head { align-items: flex-end; margin-bottom: 16px; }
+.page-head .sub { font: 400 15px/1.3 var(--body); text-transform: none; letter-spacing: 0; color: var(--ink-2); margin-top: 4px; }
+.label { font: 400 13px/1.3 var(--body); text-transform: none; letter-spacing: 0; color: var(--ink-3); padding-left: 16px; }
+.small { font-size: 15px; }
+.tiny { font-size: 13px; }
+
+/* compact title bar */
+#navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: calc(44px + var(--safe-t));
+  padding-top: var(--safe-t);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  font: 600 17px var(--body);
+  color: var(--ink);
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 0.5px solid var(--seam);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  view-transition-name: navbar;
+}
+#navbar.shown { opacity: 1; }
+
+/* buttons: filled tint, gray, plain text */
+.btn { border: 0; border-radius: 14px; height: 50px; font: 600 17px var(--body); letter-spacing: -0.01em; }
+.btn.ghost { background: var(--board-2); color: var(--ink); border: 0; }
+.btn.small { height: 34px; border-radius: 999px; padding: 0 14px; font: 600 15px var(--body); }
+.link, .done {
+  appearance: none; background: none; border: 0; padding: 6px 0;
+  color: var(--cobalt); text-decoration: none; font: 400 17px var(--body);
+}
+.link.small { font-size: 15px; }
+.link.tiny { font-size: 13px; }
+.link.danger { color: #ff453a; }
+.done { font-weight: 600; justify-self: end; }
+.btn:active, .link:active, .done:active { opacity: 0.6; transform: none; }
+
+/* surfaces: filled, no outlines */
+.tile, .card .pic, .hero, .stats, .wx-wrap, .mode-tile, .banner, .drop,
+.list .thumb, .mini-board .m, .palette, .input, .chip, .stepper button { border: 0; }
+.tile { border-radius: 16px; background: var(--board); }
+.card .pic, .hero { border-radius: 16px; background: var(--board); }
+.tile img, .card .pic img, .hero img, .silhouette { filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35)); }
+.tile .name, .card .m {
+  font: 400 12px/1.3 var(--body); text-transform: none; letter-spacing: 0; color: var(--ink-2);
+}
+.tile.acc .name { font-size: 11px; }
+.card .t { font: 500 15px/1.3 var(--body); }
+.card .m { color: var(--ink-3); }
+.tile.add {
+  background: var(--board); border: 0; color: var(--cobalt);
+  font: 500 15px var(--body); text-transform: none; letter-spacing: 0;
+}
+.badge { font: 600 11px/1 var(--body); text-transform: none; letter-spacing: 0; border: 0; background: var(--board-2); color: var(--ink); padding: 4px 6px; border-radius: 999px; }
+.mini-board .m { border-radius: 10px; background: var(--board); }
+
+/* chips: capsules */
+.chip { background: var(--board-2); border-radius: 999px; height: 32px; padding: 0 13px; font: 500 15px var(--body); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--cotton); }
+.chip .faint { color: inherit; opacity: 0.55; }
+
+/* inputs */
+.input, select.input, textarea.input { background: var(--board); border-radius: 12px; height: 48px; font-size: 17px; }
+textarea.input { height: auto; }
+.field > .label { margin-bottom: 6px; }
+
+/* grouped inset lists (Settings style) */
+.list { background: var(--board); border-radius: 14px; border: 0; overflow: hidden; }
+.list li { border: 0; padding: 11px 16px; min-height: 50px; position: relative; }
+.list li:first-child { border-top: 0; }
+.list li + li::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: 0.5px; background: var(--seam); }
+.list li:has(.thumb) + li:has(.thumb)::before { left: 82px; }
+.list .thumb { background: var(--board-2); border-radius: 10px; }
+.list .main .t { font-size: 17px; }
+.list .main .tiny { font-size: 13px; color: var(--ink-3); }
+section > .label, .label + .list, .label + ul { margin-top: 0; }
+section > .label { display: block; margin-bottom: 7px; }
+
+/* iOS switch */
+.switch {
+  appearance: none; flex: none; position: relative;
+  width: 51px; height: 31px; border-radius: 16px; border: 0; padding: 0;
+  background: var(--board-2);
+  transition: background-color 0.25s ease;
+}
+.switch .knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 27px; height: 27px; border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
+  transition: transform 0.3s var(--spring);
+}
+.switch[aria-checked="true"] { background: #30d158; }
+.switch[aria-checked="true"] .knob { transform: translateX(20px); }
+
+/* meters on the item page */
+.list.meters { padding: 4px 16px; display: flex; flex-direction: column; margin-top: 20px; }
+.meter-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) 28px; align-items: center; gap: 12px; min-height: 44px; position: relative; font-size: 15px; }
+.meter-row + .meter-row::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 0.5px; background: var(--seam); }
+.meter { height: 6px; border-radius: 3px; background: var(--board-2); overflow: hidden; }
+.meter span { display: block; height: 100%; border-radius: 3px; background: var(--cobalt); }
+.meter-row .v { text-align: right; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.stats { border-radius: 14px; background: var(--board); }
+.stats b { font: 600 22px/1.15 var(--display); }
+.stats .label { padding-left: 0; }
+.stats div + div { border-left: 0.5px solid var(--seam); }
+
+/* Today */
+.today-head { gap: 14px; margin-bottom: 18px; }
+.wx-wrap { border-radius: 16px; background: var(--board); padding: 14px 16px 12px; }
+.wx-more { color: var(--ink-3); top: 10px; right: 14px; font: 400 22px/1 var(--body); }
+.care { border: 0; background: none; font: 400 15px/1.35 var(--body); text-transform: none; letter-spacing: 0; color: var(--ink-2); display: block; width: auto; }
+.care span { padding: 0; border: 0; white-space: normal; }
+.wx-wrap .care span { padding: 0; }
+.care .hot { color: var(--rust); }
+.wx-t { font: 400 11px var(--body); text-transform: none; letter-spacing: 0; }
+.wx-v { font: 600 12px var(--body); }
+
+.week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; }
+.week div, .week div.fancy, .week div.casual, .week div.comfy {
+  border: 0; background: none; height: auto; padding: 4px 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font: 600 13px var(--body); color: var(--ink-3); box-shadow: none; text-transform: none; letter-spacing: 0;
+}
+.week div.today { color: var(--ink); box-shadow: none; }
+.week div.today b { background: var(--ink); color: var(--cotton); border-radius: 50%; width: 24px; height: 24px; display: grid; place-items: center; margin-top: -3px; margin-bottom: -3px; }
+.week .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--board-2); }
+.week div.fancy .dot { background: var(--fancy); }
+.week div.casual .dot { background: var(--casual); }
+.week div.comfy .dot { background: var(--comfy); }
+
+.modes { gap: 8px; }
+.mode-tile { border-radius: 16px; background: var(--board); padding: 12px 14px; box-shadow: none; }
+.mode-tile b { font: 600 17px var(--body); letter-spacing: -0.01em; }
+.mode-dot { box-shadow: none; width: 8px; height: 8px; margin-bottom: 8px; }
+.mode-tile[aria-pressed="true"] { box-shadow: none; transform: none; }
+.nudge { font-size: 15px; }
+.why { font-size: 15px; gap: 6px; }
+.worn-tag { font: 600 13px var(--body); text-transform: none; letter-spacing: 0; border-radius: 999px; padding: 6px 12px; }
+.banner { border-radius: 14px; background: var(--board); font-size: 15px; }
+
+/* add screen */
+.drop { border-radius: 16px; background: var(--board); border: 0; }
+details.more { border-top: 0; background: var(--board); border-radius: 14px; padding: 12px 16px; }
+details.more summary { font: 400 17px var(--body); }
+.scale-row { border-bottom: 0.5px solid var(--seam); }
+
+/* tab bar: icons over labels */
+.tabs a { flex-direction: column; gap: 3px; font: 600 10px/1 var(--body); text-transform: none; letter-spacing: 0.01em; }
+.tab-icon { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tabs .count { position: absolute; top: 6px; left: 50%; margin-left: 6px; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 999px; background: #ff453a; color: #fff; font: 600 11px/17px var(--body); text-align: center; }
+.tabs .count:empty { display: none; }
+.tabs a { position: relative; }
+
+/* sheets: centred title, Done on the right */
+.sheet { background: var(--glass-strong); }
+.sheet-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 16px; }
+.sheet-head h2 { font: 600 17px var(--body); text-align: center; }
+.alt { border-bottom: 0.5px solid var(--seam); }
+.alt .why-short { font-size: 13px; }
+
+/* settings scheme picker */
+.palette { border-radius: 14px; border: 2px solid transparent; }
+.palette[aria-pressed="true"] { border-color: var(--ink); }
+.palette b { font: 600 15px var(--body); }
+
+/* back links: tint chevron, like a navigation bar */
+.link.back { display: inline-flex; align-items: center; gap: 2px; font-size: 17px; margin-left: -6px; }
+.link.back::before {
+  content: ""; width: 10px; height: 10px; margin: 0 4px 0 6px;
+  border-left: 2.5px solid currentColor; border-bottom: 2.5px solid currentColor;
+  transform: rotate(45deg); border-radius: 1px;
+}
+
+/* iOS segmented control */
+.seg.quiet { background: var(--board-2); border: 0; border-radius: 9px; padding: 2px; gap: 0; overflow: visible; }
+.seg.quiet button { border: 0 !important; border-radius: 7px; height: 30px; font: 500 13px var(--body); color: var(--ink); background: none; }
+.seg.quiet button[aria-pressed="true"] { background: #636366; color: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04); }
+
+/* pickers inside list rows look like iOS value pickers */
+select.input { border: 0; }
+.list select.input { background: var(--board-2); height: 34px; border-radius: 8px; font-size: 15px; padding: 0 8px; }
+
+.label .glyph { margin-right: 4px; }
+.list .tiny { color: var(--ink-3); }

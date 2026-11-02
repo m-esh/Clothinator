@@ -4,6 +4,35 @@
 
 import { h } from './dom.js';
 
+// Line icons in the SF Symbols spirit: 24px grid, 1.8 stroke, round ends.
+const ICONS = {
+  today: ['M12 3v2 M12 19v2 M4.6 4.6l1.4 1.4 M18 18l1.4 1.4 M3 12h2 M19 12h2 M4.6 19.4L6 18 M18 6l1.4-1.4', 'C12 12 4.2'],
+  closet: ['M12 7.2a2.2 2.2 0 1 1 2.2 2.2c-1.2.5-2.2 1.1-2.2 2.3 M12 11.7L3.6 17.4c-.8.5-.4 1.6.5 1.6h15.8c.9 0 1.3-1.1.5-1.6L12 11.7z'],
+  outfits: ['M12 3.5l8.5 4.5-8.5 4.5L3.5 8z M3.5 12l8.5 4.5 8.5-4.5 M3.5 16l8.5 4.5 8.5-4.5'],
+  laundry: ['M3 6.5L5.6 19h12.8L21 6.5 M4.1 11.2c1.8-1.4 3.6-1.4 5.3 0s3.6 1.4 5.3 0 3.6-1.4 5.2 0'],
+  settings: ['M4 7h9 M17 7h3 M4 17h3 M11 17h9', 'C15 7 2', 'C9 17 2'],
+};
+function icon(key) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'tab-icon');
+  svg.setAttribute('aria-hidden', 'true');
+  for (const part of ICONS[key] || []) {
+    let e;
+    if (part.startsWith('C')) {
+      const [cx, cy, r] = part.slice(1).trim().split(/\s+/);
+      e = document.createElementNS(NS, 'circle');
+      e.setAttribute('cx', cx); e.setAttribute('cy', cy); e.setAttribute('r', r);
+    } else {
+      e = document.createElementNS(NS, 'path');
+      e.setAttribute('d', part);
+    }
+    svg.append(e);
+  }
+  return svg;
+}
+
 let nav = null;
 let pill = null;
 let links = [];
@@ -17,8 +46,8 @@ export function mountTabs(el, defs) {
   tabs = defs;
   nav.textContent = '';
   pill = h('span', { class: 'tab-pill', 'aria-hidden': 'true' });
-  links = defs.map(([key, label]) => h('a', { href: `#${key}`, draggable: 'false' },
-    h('span', { class: 'tab-label' }, label), h('span', { class: 'count' })));
+  links = defs.map(([key, label]) => h('a', { href: `#${key}`, draggable: 'false', 'aria-label': label },
+    icon(key), h('span', { class: 'tab-label' }, label), h('span', { class: 'count' })));
   nav.append(pill, ...links);
 
   for (const a of links) {

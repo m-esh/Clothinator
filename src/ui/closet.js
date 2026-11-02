@@ -1,6 +1,6 @@
 // Closet: everything you own, and each item's page.
 
-import { h, toast, confirmSheet, shortDate } from './dom.js';
+import { h, toast, confirmSheet, shortDate, toggle } from './dom.js';
 import { itemPic, displayName, miniBoard } from './board.js';
 import * as store from '../data/store.js';
 import { state } from '../data/store.js';
@@ -76,7 +76,7 @@ export function renderItem(root, id) {
   // (native append would print "null").
   root.append(h('div', null,
     h('div', { class: 'row between', style: { marginBottom: '14px' } },
-      h('a', { class: 'link small', href: '#closet' }, '← Closet'),
+      h('a', { class: 'link back', href: '#closet' }, 'Closet'),
       h('a', { class: 'link small', href: `#edit/${id}` }, 'Edit')),
     h('div', { class: 'hero', style: { viewTransitionName: 'hero' } }, itemPic(i, 'cutout')),
     h('div', { style: { marginTop: '16px' } },
@@ -84,7 +84,7 @@ export function renderItem(root, id) {
       h('div', { class: 'muted small' }, [s.label, i.fabric && FABRIC[i.fabric]?.label, PATTERNS.find((p) => p.key === s.pattern)?.label].filter(Boolean).join(' · ')),
       h('div', { class: 'chips', style: { marginTop: '10px' } },
         (i.colors || []).map((c) => h('span', { class: 'chip', style: { pointerEvents: 'none' } }, h('span', { class: 'swatch', style: { background: COLOR[c.name]?.hex || c.hex } }), c.name)))),
-    h('div', { class: 'tapes', 'aria-label': 'Measurements' },
+    h('div', { class: 'list meters', 'aria-label': 'Measurements' },
       tape('Dressy', s.formality), tape('Warmth', s.warmth), tape('Comfort', s.comfort)),
     h('div', { class: 'stats' },
       h('div', null, h('span', { class: 'label' }, 'Worn'), h('b', null, i.wears || 0)),
@@ -113,15 +113,16 @@ export function renderItem(root, id) {
 }
 
 // A tape measure from 0 to 5 with the value marked.
+// A 0–5 meter, drawn as a filled capsule.
 function tape(label, value) {
-  return h('div', { class: 'tape-row' },
-    h('span', { class: 'label' }, label),
-    h('div', { class: 'tape', role: 'img', 'aria-label': `${label} ${value} of 5` }, h('span', { class: 'mark', style: { left: `${(value / 5) * 100}%` } })),
+  return h('div', { class: 'meter-row' },
+    h('span', null, label),
+    h('div', { class: 'meter', role: 'img', 'aria-label': `${label} ${value} of 5` }, h('span', { style: { width: `${(value / 5) * 100}%` } })),
     h('span', { class: 'v' }, String(value)));
 }
 
 function toggleRow(title, sub, on, set) {
   return h('li', null,
     h('div', { class: 'main' }, h('div', null, title), h('div', { class: 'tiny faint' }, sub)),
-    h('button', { class: 'chip', 'aria-pressed': String(!!on), onclick: () => set(!on) }, on ? 'On' : 'Off'));
+    toggle(on, set, title));
 }

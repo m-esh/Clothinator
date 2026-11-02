@@ -47,7 +47,7 @@ export async function renderAdd(root, rerender, editId = null) {
   }
 
   root.append(h('div', { class: 'row between', style: { marginBottom: '14px' } },
-    h('a', { class: 'link small', href: D.editingId ? `#item/${D.editingId}` : '#closet', onclick: () => resetAdd() }, D.editingId ? '← Back' : '← Closet')));
+    h('a', { class: 'link back', href: D.editingId ? `#item/${D.editingId}` : '#closet', onclick: () => resetAdd() }, D.editingId ? 'Back' : 'Closet')));
   root.append(h('h1', { style: { marginBottom: '18px' } }, D.editingId ? 'Edit' : 'Add a piece'));
 
   if (D.stage === 'pick') root.append(pickStage(rerender));

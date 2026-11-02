@@ -3,14 +3,14 @@
 // library itself. Weather always goes to the network (the app keeps its own
 // last-known copy).
 
-const VERSION = 'v16';
+const VERSION = 'v17';
 const SHELL = `clothinator-shell-${VERSION}`;
 const RUNTIME = 'clothinator-runtime';
 
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'styles/app.css',
   'assets/icon.svg', 'assets/icon-180.png', 'assets/icon-192.png', 'assets/icon-512.png',
-  'assets/fonts/unbounded.woff2', 'assets/fonts/outfit.woff2',
+  'assets/fonts/unbounded.woff2',
   'src/app.js', 'src/ui/dom.js', 'src/ui/board.js', 'src/ui/today.js', 'src/ui/closet.js', 'src/ui/add.js',
   'src/ui/outfits.js', 'src/ui/laundry.js', 'src/ui/settings.js',
   'src/data/db.js', 'src/data/store.js', 'src/data/backup.js', 'src/data/weather-service.js',

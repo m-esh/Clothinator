@@ -82,11 +82,13 @@ src/data/      IndexedDB, in-memory store, backups, weather service
 src/ui/        one module per screen
 ```
 
-## Type
+## Type and interface
 
-Unbounded for headings (wide, round-ended, like the C mark) and Outfit for
-everything else. Both ship in `assets/fonts` under the SIL Open Font License,
-so there is no Google Fonts request, no font flash and they work offline.
+The interface follows iOS conventions: Apple's system font (San Francisco),
+large titles that collapse into a bar, grouped inset lists, switches, tinted
+text buttons and a tab bar with icons. Unbounded (wide, round-ended, like the
+C mark) is used only for the Clad wordmark; it ships in `assets/fonts` under
+the SIL Open Font License.
 
 ## Icon and iOS 26
 

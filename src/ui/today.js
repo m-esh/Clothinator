@@ -174,10 +174,8 @@ function header(today, rerender) {
   if (W.status === 'ok' && W.summary) {
     const hours = `${hourLabel(state.prefs.from)}–${hourLabel(state.prefs.to)}`;
     weather = h('div', { class: 'care', 'aria-label': `Weather ${hours}: ${describe(W.summary, state.prefs.unit)}` },
-      h('span', null, hours),
-      W.place ? h('span', null, W.place) : null,
-      labelParts(W.summary, state.prefs.unit).map((p) => h('span', { class: p.hot ? 'hot' : null }, p.text)),
-      W.stale ? h('span', null, 'last known') : null);
+      [hours, W.place, ...labelParts(W.summary, state.prefs.unit).map((p) => p.text), W.stale ? 'last known' : null]
+        .filter(Boolean).map((t, i, all) => h('span', { class: labelParts(W.summary, state.prefs.unit).some((p) => p.hot && p.text === t) ? 'hot' : null }, t, i < all.length - 1 ? ' · ' : '')));
   } else if (W.status === 'error') {
     weather = h('div', { class: 'weather-error' }, h('span', { class: 'warn' }, W.error), ' · ',
       h('button', { class: 'link small', onclick: () => fetchWeather(today, rerender, true) }, 'Try again'), ' · ',
@@ -202,7 +200,8 @@ function header(today, rerender) {
     isWeekend(today) ? null : h('div', { class: 'week', 'aria-label': 'This week' },
       week.map((d, i) => h('div', {
         class: [d.mode, d.date === today ? 'today' : ''].filter(Boolean).join(' '),
-      }, h('b', null, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][i]), h('small', null, d.mode ? MODES[d.mode].label : '\u00a0')))),
+        title: d.mode ? MODES[d.mode].label : '',
+      }, h('b', null, ['M', 'T', 'W', 'T', 'F'][i]), h('i', { class: 'dot' })))),
   );
 }
 

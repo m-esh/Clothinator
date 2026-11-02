@@ -136,7 +136,7 @@ export function sheet(title, build, { onClose } = {}) {
   const grab = h('div', { class: 'grab-zone' }, h('div', { class: 'grab' }));
   const inner = h('div', { class: 'sheet-inner' },
     grab,
-    h('div', { class: 'sheet-head' }, h('h2', null, title), h('button', { class: 'link', onclick: close }, 'Close')),
+    h('div', { class: 'sheet-head' }, h('span'), h('h2', null, title), h('button', { class: 'done', onclick: close }, 'Done')),
   );
   panel.append(inner);
   const body = h('div');
@@ -208,6 +208,17 @@ export function confirmSheet(title, text, yes, onYes, { danger = false } = {}) {
       h('button', { class: 'btn ghost', onclick: close }, 'Cancel'),
     ),
   ));
+}
+
+// iOS-style switch.
+export function toggle(on, onChange, label) {
+  return h('button', {
+    class: 'switch',
+    role: 'switch',
+    'aria-checked': String(!!on),
+    'aria-label': label,
+    onclick: () => onChange(!on),
+  }, h('span', { class: 'knob' }));
 }
 
 export function stepper(value, { min = 0, max = 5, step = 0.5, onChange, format = (v) => v }) {
