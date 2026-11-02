@@ -57,9 +57,11 @@ export async function renderAdd(root, rerender, editId = null) {
 
 // ── 1. photo ────────────────────────────────────────────────
 
-function fileInput(label, capture, rerender, primary) {
+// One button: without `capture`, iOS offers Take Photo and Photo Library
+// in the same menu.
+function fileInput(label, rerender, primary) {
   return h('label', { class: `btn ${primary ? '' : 'ghost'} file-btn` }, label,
-    h('input', { type: 'file', accept: 'image/*', capture: capture ? 'environment' : null, onchange: (e) => {
+    h('input', { type: 'file', accept: 'image/*', onchange: (e) => {
       const file = e.target.files?.[0];
       if (file) runPhoto(file, 'auto', rerender);
     } }));
@@ -69,8 +71,8 @@ function pickStage(rerender) {
   return h('div', null,
     h('div', { class: 'drop' },
       h('h3', null, 'One piece, flat on the floor'),
-      h('p', { class: 'muted small', style: { marginBottom: 0 } }, 'Fill most of the frame. A plain floor and daylight give the cleanest cut-out. Everything is processed on this phone.'),
-      h('div', { class: 'row wrap' }, fileInput('Take photo', true, rerender, true), fileInput('From library', false, rerender, false))),
+      h('p', { class: 'muted small' }, 'Plain floor, good light.'),
+      h('div', { class: 'row wrap' }, fileInput('Add photo', rerender, true))),
     h('button', { class: 'link small', style: { marginTop: '16px' }, onclick: () => { D.stage = 'form'; rerender(); } }, 'Add without a photo'));
 }
 
@@ -135,7 +137,7 @@ function processingStage() {
   const bar = h('div', { class: 'progress indet js-progress-bar' }, h('div'));
   requestAnimationFrame(updateProgress);
   return h('div', { class: 'drop' }, text, bar,
-    h('p', { class: 'tiny faint', style: { marginBottom: 0 } }, 'The first photo downloads the on-phone models (about 135 MB, once). After that it takes a few seconds and works offline.'));
+    h('p', { class: 'tiny faint', style: { marginBottom: 0 } }, 'First time only: downloads about 135 MB.'));
 }
 
 // ── 2. form ─────────────────────────────────────────────────
@@ -154,7 +156,7 @@ function formStage(rerender) {
         h('button', { class: 'link small', onclick: () => backgroundSheet(rerender) }, 'Redo background')));
     }
   } else if (!D.editingId) {
-    wrap.append(h('div', { class: 'row wrap' }, fileInput('Take photo', true, rerender, false), fileInput('From library', false, rerender, false)));
+    wrap.append(h('div', { class: 'row wrap' }, fileInput('Add photo', rerender, false)));
   }
 
   if (D.guessing) {
@@ -185,7 +187,7 @@ function formStage(rerender) {
           f.type = k; D.touched.type = true; if (!D.touched.name) f.name = autoName(); rerender();
         } }, TYPE[k].label)))));
   } else if (D.guess?.failed) {
-    form.append(h('div', { class: 'ai-note' }, 'Couldn\'t load the recognition model, so pick the type yourself.'));
+    form.append(h('div', { class: 'ai-note' }, 'Pick the type yourself.'));
   }
 
   // name
@@ -199,7 +201,7 @@ function formStage(rerender) {
         f.colors.splice(idx, 1); D.touched.colors = true; if (!D.touched.name) f.name = autoName(); rerender();
       } }, h('span', { class: 'swatch', style: { background: COLOR[c.name]?.hex } }), c.name, h('span', { class: 'faint' }, '×'))),
       h('button', { class: 'chip', onclick: () => colourSheet(rerender) }, '+ colour')),
-    f.colors.length > 1 ? h('div', { class: 'tiny faint', style: { marginTop: '6px' } }, 'The first colour is treated as the main one.') : null));
+    ));
 
   // pattern
   if (!f.type || TYPE[f.type].cat !== 'accessory') {
@@ -226,7 +228,6 @@ function formStage(rerender) {
         stepper(f[key] ?? d[key], { min: key === 'comfort' ? 1 : 0, max: 5, step: 0.5, onChange: (v) => { f[key] = v; } })));
     form.append(h('details', { class: 'more' },
       h('summary', null, 'Fine-tune'),
-      h('p', { class: 'tiny faint' }, 'Starting values come from the type and fabric. Only change them if this piece is unusual, like a jacket that\'s warmer than it looks.'),
       num('formality', 'Dressiness', '0 gym · 5 black tie'),
       num('warmth', 'Warmth', '0 none · 5 parka'),
       num('comfort', 'Comfort', '1 endure · 5 pyjamas'),
@@ -243,7 +244,6 @@ function formStage(rerender) {
     h('textarea', { class: 'input', rows: 2, placeholder: 'Optional', oninput: (e) => { f.notes = e.target.value; } }, f.notes)));
 
   form.append(h('button', { class: 'btn block', style: { marginTop: '24px' }, disabled: !f.type, onclick: () => save() }, D.editingId ? 'Save changes' : 'Add to closet'));
-  if (!f.type) form.append(h('div', { class: 'tiny faint', style: { marginTop: '6px' } }, 'Choose what it is first.'));
   return wrap;
 }
 

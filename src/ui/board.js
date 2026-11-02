@@ -33,7 +33,7 @@ const ORDER = ['outer', 'mid', 'base', 'onepiece', 'bottom', 'shoes'];
 /**
  * @param outfit   slots → items
  * @param o.onTap  (slot, item) → void
- * @param o.onAdd  (what: 'layer' | 'accessory') → void
+ * @param o.onAdd  () → void
  * @param o.flagged Set of item ids to mark
  */
 export function board(outfit, o = {}) {
@@ -47,10 +47,7 @@ export function board(outfit, o = {}) {
   }
   for (const a of outfit.accessories || []) tiles.push(tile(a, 'acc', 'accessory', o));
   if (o.onAdd) {
-    if (!outfit.outer || !outfit.mid) {
-      tiles.push(h('button', { key: 'add-layer', class: 'tile add acc', onclick: () => o.onAdd('layer') }, '+ layer'));
-    }
-    tiles.push(h('button', { key: 'add-acc', class: 'tile add acc', onclick: () => o.onAdd('accessory') }, '+ accessory'));
+    tiles.push(h('button', { key: 'add', class: 'tile add acc', onclick: () => o.onAdd() }, '+ Add'));
   }
   return h('div', { class: 'board' }, tiles);
 }

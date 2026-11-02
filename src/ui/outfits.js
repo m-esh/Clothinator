@@ -11,13 +11,13 @@ import { isoDate } from '../core/week.js';
 
 export function renderOutfits(root) {
   root.append(h('div', { class: 'page-head' },
-    h('div', null, h('h1', null, 'Outfits'), h('div', { class: 'sub faint small' }, 'Yours get suggested ahead of generated ones.')),
-    h('a', { class: 'btn small', href: '#build' }, 'New')));
+    h('h1', null, 'Outfits'),
+    state.outfits.length ? h('a', { class: 'btn small', href: '#build' }, 'New') : null));
 
   if (!state.outfits.length) {
     root.append(h('div', { class: 'empty' },
-      h('p', null, 'Nothing saved yet. Build one you already know works, or tap Save on a suggestion you like.'),
-      h('a', { class: 'btn ghost', href: '#build' }, 'Build an outfit')));
+      h('p', null, 'Nothing saved yet. Tap Save on a suggestion, or build your own.'),
+      h('a', { class: 'btn', href: '#build' }, 'Build an outfit')));
     return;
   }
 
@@ -92,7 +92,6 @@ export function renderBuilder(root, rerender, editId = null) {
     root.append(h('ul', { class: 'why' },
       good.map((n) => h('li', null, n.text)),
       bad.map((n) => h('li', { class: 'warn' }, n.text))));
-    if (bad.length) root.append(h('p', { class: 'tiny faint' }, 'You can still save it. These are warnings, not rules for you.'));
   }
 
   root.append(

@@ -29,7 +29,7 @@ export function renderLaundry(root) {
       ? h('ul', { class: 'list' }, inWash.map((i) => row(i, today,
         `${i.wearsSinceWash || 0} wear${i.wearsSinceWash === 1 ? '' : 's'} before washing${i.laundrySince ? ` · in since ${shortDate(i.laundrySince, today)}` : ''}`,
         h('button', { class: 'btn ghost small', onclick: () => store.setLaundry([i.id], false) }, 'Clean'))))
-      : h('p', { class: 'muted small' }, 'Nothing in the wash. Everything is available for outfits.')));
+      : h('p', { class: 'muted small' }, 'Nothing in the wash.')));
 
   root.append(h('section', null,
     h('div', { class: 'label', style: { marginBottom: '10px' } }, 'Worn since last wash'),

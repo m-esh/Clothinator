@@ -37,7 +37,6 @@ export function renderSettings(root, rerender) {
       },
       h('span', { class: 'dots' }, pal.dots.map((c) => h('i', { style: { background: c } }))),
       h('b', { style: { color: '#f0f0f2' } }, pal.label)))),
-    h('p', { class: 'tiny faint', style: { marginTop: '8px' } }, 'The three dots after the first are the Fancy, Casual and Comfy colours.'),
   ));
 
   // ── weather ──
@@ -50,7 +49,7 @@ export function renderSettings(root, rerender) {
           ? h('button', { class: 'btn ghost small', onclick: async () => { await store.updatePrefs({ location: null }); invalidateWeather(); } }, 'Use my location')
           : h('button', { class: 'btn ghost small', onclick: () => citySheet() }, 'Pick a city')),
       h('li', null,
-        h('div', { class: 'main' }, h('div', null, 'Your day'), h('div', { class: 'tiny faint' }, 'Outfits are planned for these hours')),
+        h('div', { class: 'main' }, 'Your day'),
         h('div', { class: 'row' },
           hourSelect(p.from, (v) => { store.updatePrefs({ from: v, to: Math.max(v + 1, p.to) }); invalidateWeather(); }),
           h('span', { class: 'faint' }, 'to'),
@@ -67,7 +66,6 @@ export function renderSettings(root, rerender) {
   const favs = state.items.filter((i) => i.favorite);
   root.append(h('section', null,
     h('div', { class: 'label', style: { marginBottom: '8px' } }, 'Preferences'),
-    h('p', { class: 'tiny faint', style: { marginTop: 0 } }, 'The app also learns from what you wear, skip, swap and save. These are the hard rules on top.'),
     h('div', { class: 'row between', style: { marginTop: '14px' } }, h('h3', null, 'Never together'), h('button', { class: 'link small', onclick: () => pairSheet() }, 'Add a pair')),
     pairs.length ? h('ul', { class: 'list', style: { marginTop: '8px' } }, pairs.map(([a, b], idx) => h('li', null,
       h('div', { class: 'thumb' }, itemPic(a)), h('div', { class: 'thumb' }, itemPic(b)),
@@ -85,7 +83,7 @@ export function renderSettings(root, rerender) {
   const both = models.background && models.classify;
   root.append(h('section', null,
     h('div', { class: 'label', style: { marginBottom: '8px' } }, 'On-phone AI'),
-    h('p', { class: 'small muted', style: { marginTop: 0 } }, 'Background removal and recognising clothes run on this phone, free, and nothing is uploaded. The models download once (about 135 MB).'),
+    h('p', { class: 'small muted', style: { marginTop: 0 } }, 'Runs on this phone, free. One-time download, about 135 MB.'),
     models.checking ? h('p', { class: 'small faint' }, 'Checking…') : h('ul', { class: 'list' },
       h('li', null, h('div', { class: 'main' }, 'Background removal'), h('span', { class: 'small faint' }, models.background ? 'Downloaded' : 'Not yet')),
       h('li', null, h('div', { class: 'main' }, 'Clothing recognition'), h('span', { class: 'small faint' }, models.classify ? 'Downloaded' : 'Not yet'))),
@@ -106,7 +104,7 @@ export function renderSettings(root, rerender) {
     h('div', { class: 'label', style: { marginBottom: '8px' } }, 'Backup'),
     h('p', { class: 'small muted', style: { marginTop: 0 } },
       p.lastBackupAt ? `Last backup ${new Date(p.lastBackupAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}.` : 'No backup yet.',
-      ' Everything, photos included, in one file. Save it to iCloud Drive.'),
+      ' Save it to iCloud Drive.'),
     h('div', { class: 'row wrap' },
       h('button', { class: 'btn small', onclick: async () => { if (await exportBackup()) toast('Backup saved'); } }, 'Save a backup'),
       h('label', { class: 'btn ghost small file-btn' }, 'Restore',

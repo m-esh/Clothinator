@@ -147,7 +147,7 @@ export async function renderToday(root, rerender) {
         class: `mode-tile mode-${m.key}`,
         'aria-pressed': String(S.mode === m.key),
         onclick: () => { if (S.mode !== m.key) { S.mode = m.key; S.custom = null; S.skip = []; saveSession(); rerender(); } },
-      }, h('span', { class: 'mode-dot' }), h('b', null, m.label), h('small', null, MODE_HINT[m.key])))),
+      }, h('span', { class: 'mode-dot' }), h('b', null, m.label)))),
     nudge && h('div', { class: 'nudge' }, nudge),
   ));
 
@@ -171,6 +171,7 @@ function header(today, rerender) {
     const hours = `${hourLabel(state.prefs.from)}–${hourLabel(state.prefs.to)}`;
     weather = h('div', { class: 'care', 'aria-label': `Weather ${hours}: ${describe(W.summary, state.prefs.unit)}` },
       h('span', null, hours),
+      W.place ? h('span', null, W.place) : null,
       labelParts(W.summary, state.prefs.unit).map((p) => h('span', { class: p.hot ? 'hot' : null }, p.text)),
       W.stale ? h('span', null, 'last known') : null);
   } else if (W.status === 'error') {
@@ -183,17 +184,15 @@ function header(today, rerender) {
 
   const week = weekModes(state.wears, today);
   return h('header', { class: 'today-head' },
-    h('div', { class: 'eyebrow' }, W.place ? `Today · ${W.place}` : 'Today'),
     h('h1', null, longDate(today)),
     W.status === 'ok' && W.summary ? h('div', { class: 'wx-wrap' }, wxChart(W.summary, state.prefs.unit), weather) : weather,
     isWeekend(today) ? null : h('div', { class: 'week', 'aria-label': 'This week' },
       week.map((d, i) => h('div', {
         class: [d.mode, d.date === today ? 'today' : ''].filter(Boolean).join(' '),
-      }, h('b', null, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][i]), h('small', null, d.mode ? MODES[d.mode].label : '—')))),
+      }, h('b', null, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][i]), h('small', null, d.mode ? MODES[d.mode].label : '\u00a0')))),
   );
 }
 
-const MODE_HINT = { fancy: 'Sharp, put together', casual: 'Easy, still right', comfy: 'Soft and relaxed' };
 
 // Feels-like temperature across your hours, rainy hours hatched.
 function wxChart(w, unit) {
@@ -246,8 +245,7 @@ const hourLabel = (x) => (x === 12 ? '12pm' : x > 12 ? `${x - 12}pm` : `${x}am`)
 function backupBanner() {
   const never = !state.prefs.lastBackupAt;
   return h('div', { class: 'banner' },
-    never ? 'Your closet only lives on this phone. Save a backup to iCloud Drive in case anything happens to it.'
-      : 'It\'s been a month since your last backup.',
+    never ? 'No backup yet. Your closet only lives on this phone.' : 'Last backup was over a month ago.',
     h('div', { class: 'row' },
       h('button', { class: 'btn small', onclick: async () => { if (await exportBackup()) toast('Backup saved'); } }, 'Save backup'),
       h('button', { class: 'link small', onclick: () => store.updatePrefs({ backupSnoozedAt: Date.now() }) }, 'Later'),
@@ -305,12 +303,10 @@ function pickView(today, rerender, worn) {
     }
   }
 
-  if (worn) wrap.append(h('div', { class: 'faint small', style: { marginBottom: '10px' } }, 'Picking something else. Wearing it replaces this morning\'s log.'));
-
   wrap.append(board(outfit, {
     flagged,
     onTap: (slot, item) => swapSheet(outfit, slot, item, rerender),
-    onAdd: (what) => addSheet(outfit, what, rerender),
+    onAdd: () => addSheet(outfit, rerender),
   }));
 
   const good = notes.filter((n) => n.tone === 'good').slice(0, 3);
@@ -322,7 +318,7 @@ function pickView(today, rerender, worn) {
   if (cur.pool != null && cur.pool < 5 && !cur.custom) {
     const out = state.items.filter((i) => i.inLaundry).length;
     wrap.append(h('p', { class: 'tiny faint' },
-      `Only ${cur.pool} ${MODES[S.mode].label.toLowerCase()} look${cur.pool === 1 ? '' : 's'} possible today${out ? `, with ${out} piece${out === 1 ? '' : 's'} in the laundry` : ''}.`));
+      `Only ${cur.pool} ${MODES[S.mode].label.toLowerCase()} look${cur.pool === 1 ? '' : 's'} possible${out ? ` (${out} in laundry)` : ''}.`));
   }
 
   const ids = itemIds(outfit);
@@ -347,11 +343,11 @@ function pickView(today, rerender, worn) {
       else { await store.saveOutfit(ids, { mode: S.mode }); toast('Saved to outfits'); }
     } }, saved ? 'Saved' : 'Save'),
   ));
-  if (S.custom) {
-    wrap.append(h('button', { class: 'link small', style: { marginTop: '8px' }, onclick: () => { S.custom = null; saveSession(); rerender(); } }, 'Back to my pick'));
-  }
+  // One way back, never two.
   if (worn) {
-    wrap.append(h('button', { class: 'link small', style: { marginTop: '8px', display: 'block' }, onclick: () => { S.changing = false; saveSession(); rerender(); } }, 'Keep what I logged'));
+    wrap.append(h('button', { class: 'link small', style: { marginTop: '8px' }, onclick: () => { S.changing = false; S.custom = null; saveSession(); rerender(); } }, 'Keep what I logged'));
+  } else if (S.custom) {
+    wrap.append(h('button', { class: 'link small', style: { marginTop: '8px' }, onclick: () => { S.custom = null; saveSession(); rerender(); } }, 'Back to my pick'));
   }
   return wrap;
 }
@@ -365,8 +361,6 @@ function wornView(worn, rerender) {
       h('button', { class: 'btn ghost', onclick: () => { S.changing = true; saveSession(); rerender(); } }, 'Change'),
       h('button', { class: 'link', onclick: () => store.undoWear(worn.id) }, 'Undo'),
     ),
-    h('p', { class: 'tiny faint', style: { marginTop: '18px' } },
-      'Wear counts went up by one for each piece. Put anything that needs a wash in the laundry from the Laundry tab.'),
   );
 }
 
@@ -415,20 +409,20 @@ function swapSheet(outfit, slot, item, rerender) {
   });
 }
 
-function addSheet(outfit, what, rerender) {
+// One "Add" for both layers and accessories.
+function addSheet(outfit, rerender) {
   const ctx = ctxFor();
-  sheet(what === 'layer' ? 'Add a layer' : 'Add an accessory', (close) => {
-    let rows = [];
-    if (what === 'layer') {
-      if (!outfit.outer) rows.push(...alternatives(outfit, 'outer', state.items, ctx));
-      if (!outfit.mid && (outfit.base || outfit.onepiece)) rows.push(...alternatives(outfit, 'mid', state.items, ctx));
-      rows.sort((a, b) => b.score - a.score);
-    } else {
-      const have = new Set((outfit.accessories || []).map((a) => a.id));
-      rows = alternatives(outfit, 'accessory', state.items, ctx).filter((a) => !have.has(a.item.id));
-    }
-    return h('div', null, rows.length
-      ? rows.map((a) => altRow(a, () => { close(); applySwap(outfit, a.outfit, rerender); }))
-      : h('p', { class: 'muted' }, what === 'layer' ? 'No clean layers to add.' : 'No accessories in the closet yet.'));
+  sheet('Add', (close) => {
+    const layers = [];
+    if (!outfit.outer) layers.push(...alternatives(outfit, 'outer', state.items, ctx));
+    if (!outfit.mid && (outfit.base || outfit.onepiece)) layers.push(...alternatives(outfit, 'mid', state.items, ctx));
+    layers.sort((a, b) => b.score - a.score);
+    const have = new Set((outfit.accessories || []).map((a) => a.id));
+    const accs = alternatives(outfit, 'accessory', state.items, ctx).filter((a) => !have.has(a.item.id));
+    const pick = (a) => altRow(a, () => { close(); applySwap(outfit, a.outfit, rerender); });
+    if (!layers.length && !accs.length) return h('p', { class: 'muted' }, 'Nothing clean to add.');
+    return h('div', null,
+      layers.length ? [h('div', { class: 'label', style: { margin: '4px 0 2px' } }, 'Layers'), layers.map(pick)] : null,
+      accs.length ? [h('div', { class: 'label', style: { margin: '16px 0 2px' } }, 'Accessories'), accs.map(pick)] : null);
   });
 }

@@ -22,13 +22,13 @@ export function renderCloset(root, rerender) {
   const items = state.items;
   root.append(h('div', { class: 'page-head' },
     h('div', null, h('h1', null, 'Closet'), h('div', { class: 'sub faint small num' }, `${items.length} piece${items.length === 1 ? '' : 's'}`)),
-    h('a', { class: 'btn small', href: '#add' }, 'Add'),
+    items.length ? h('a', { class: 'btn small', href: '#add' }, 'Add') : null, // empty state has its own
   ));
 
   if (!items.length) {
     root.append(h('div', { class: 'empty' },
-      h('p', null, 'Nothing here yet. Lay a piece flat on the floor, take a photo, and I\'ll cut it out and work out what it is.'),
-      h('a', { class: 'btn', href: '#add' }, 'Add your first piece')));
+      h('p', null, 'Nothing here yet.'),
+      h('a', { class: 'btn', href: '#add' }, 'Add a piece')));
     return;
   }
 
@@ -45,7 +45,7 @@ export function renderCloset(root, rerender) {
     if (filter !== 'all' && filter !== c.key) continue;
     const list = items.filter((i) => stats(i).cat === c.key);
     if (!list.length) continue;
-    root.append(h('div', { class: 'cat-title' }, h('span', { class: 'label' }, c.label), h('span', { class: 'tiny faint num' }, list.length)));
+    root.append(h('div', { class: 'cat-title' }, h('span', { class: 'label' }, c.label)));
     root.append(h('div', { class: 'grid' }, list.map((i) => h('button', {
       key: i.id,
       class: `card${i.inLaundry ? ' out' : ''}`,
@@ -97,8 +97,8 @@ export function renderItem(root, id) {
       } }, i.inLaundry ? 'Take out of laundry (clean)' : 'Put in laundry'),
     ),
     h('ul', { class: 'list', style: { marginTop: '22px' } },
-      toggleRow('Favourite', 'Suggested a little more often', i.favorite, (v) => store.updateItem(id, { favorite: v })),
-      toggleRow('Never suggest', 'Keep it in the closet, leave it out of outfits', i.blocked, (v) => store.updateItem(id, { blocked: v })),
+      toggleRow('Favourite', 'Picked a bit more often', i.favorite, (v) => store.updateItem(id, { favorite: v })),
+      toggleRow('Never suggest', 'Left out of outfits', i.blocked, (v) => store.updateItem(id, { blocked: v })),
     ),
     saved.length ? h('section', null,
       h('div', { class: 'label', style: { marginBottom: '10px' } }, `In ${saved.length} saved outfit${saved.length === 1 ? '' : 's'}`),
