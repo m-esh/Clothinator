@@ -82,6 +82,12 @@ src/data/      IndexedDB, in-memory store, backups, weather service
 src/ui/        one module per screen
 ```
 
+## Type
+
+Unbounded for headings (wide, round-ended, like the C mark) and Outfit for
+everything else. Both ship in `assets/fonts` under the SIL Open Font License,
+so there is no Google Fonts request, no font flash and they work offline.
+
 ## Icon and iOS 26
 
 The mark is a bold C sitting on a hanger. The home-screen icon draws it as

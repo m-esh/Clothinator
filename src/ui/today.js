@@ -183,7 +183,9 @@ function header(today, rerender) {
       h('button', { class: 'link small', onclick: () => fetchWeather(today, rerender, true) }, 'Try again'), ' · ',
       h('a', { class: 'link small', href: '#settings' }, 'Set a city'));
   } else {
-    weather = h('div', { class: 'care' }, h('span', null, 'Checking the weather'));
+    weather = h('div', { class: 'wx-wrap', 'aria-busy': 'true' },
+      h('div', { class: 'wx-skel' }),
+      h('div', { class: 'care' }, h('span', null, 'Checking the weather')));
   }
 
   const week = weekModes(state.wears, today);

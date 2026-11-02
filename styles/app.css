@@ -4,6 +4,22 @@
    labels (mono, uppercase, tracked). The one bold thing is cobalt, used only
    for the action you take.                                                  */
 
+/* Fonts ship with the app (no Google Fonts round trip, so no fallback-font
+   flash, and they work offline). Unbounded: wide, round-ended geometric
+   display that echoes the C mark. Outfit: clean geometric text face. */
+@font-face {
+  font-family: "Unbounded";
+  src: url("../assets/fonts/unbounded.woff2") format("woff2");
+  font-weight: 200 900;
+  font-display: block;
+}
+@font-face {
+  font-family: "Outfit";
+  src: url("../assets/fonts/outfit.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: block;
+}
+
 /* One deliberate look: dark, always. Denim at night. */
 :root {
   /* colour */
@@ -39,9 +55,9 @@
   --glass-pill: rgba(255, 255, 255, 0.1);
 
   /* type */
-  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --label: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --display: "Unbounded", "Arial Rounded MT Bold", "Helvetica Neue", Arial, sans-serif;
+  --body: "Outfit", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --label: "Outfit", -apple-system, "Helvetica Neue", Arial, sans-serif;
 
   --tab-h: 62px;     /* floating bar height */
   --tab-gap: 10px;   /* space under it */
@@ -67,7 +83,6 @@ body {
   background-attachment: fixed;
   color: var(--ink);
   font: 400 16px/1.5 var(--body);
-  font-variation-settings: "wdth" 100;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
@@ -140,14 +155,13 @@ a { color: inherit; }
 
 h1, h2, h3 { margin: 0; font-family: var(--display); text-wrap: balance; }
 h1 {
-  font-size: 30px;
-  line-height: 1.08;
-  font-weight: 700;
-  font-variation-settings: "wdth" 118;
-  letter-spacing: -0.015em;
+  font-size: 25px;
+  line-height: 1.15;
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
-h2 { font-size: 21px; line-height: 1.2; font-weight: 650; font-variation-settings: "wdth" 110; }
-h3 { font-size: 16px; font-weight: 650; }
+h2 { font-size: 18px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
+h3 { font-size: 15px; font-weight: 600; font-family: var(--body); }
 
 .label {
   font: 500 11px/1.3 var(--label);
@@ -187,7 +201,6 @@ section + section { margin-top: 30px; }
   border-radius: 2px;
   font-weight: 650;
   font-size: 15px;
-  font-variation-settings: "wdth" 108;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -236,11 +249,10 @@ section + section { margin-top: 30px; }
   height: 52px;
   font-size: 16px;
   font-weight: 600;
-  font-variation-settings: "wdth" 112;
 }
 .seg button[aria-pressed="true"] { background: var(--cobalt); border-color: var(--cobalt); color: var(--on-cobalt); }
 .seg.quiet { gap: 0; border: 1px solid var(--seam); border-radius: 2px; overflow: hidden; }
-.seg.quiet button { border: 0; border-left: 1px solid var(--seam); border-radius: 0; height: 36px; font-size: 13.5px; font-weight: 500; font-variation-settings: "wdth" 100; }
+.seg.quiet button { border: 0; border-left: 1px solid var(--seam); border-radius: 0; height: 36px; font-size: 13.5px; font-weight: 500; }
 .seg.quiet button:first-child { border-left: 0; }
 .seg.quiet button[aria-pressed="true"] { background: var(--board-2); color: var(--ink); }
 
@@ -536,7 +548,7 @@ button.tile:active { background: var(--board-2); }
 .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--seam); border-radius: 2px; background: var(--board); margin: 20px 0; }
 .stats div { padding: 12px; }
 .stats div + div { border-left: 1px solid var(--seam); }
-.stats b { display: block; margin-top: 4px; font: 600 24px/1.1 var(--display); font-variation-settings: "wdth" 115; font-variant-numeric: tabular-nums; }
+.stats b { display: block; margin-top: 4px; font: 600 24px/1.1 var(--display); font-variant-numeric: tabular-nums; }
 
 /* tape-measure scales: 0–5 in half steps */
 .tapes { display: flex; flex-direction: column; gap: 14px; margin-top: 22px; }
@@ -710,7 +722,7 @@ details.more summary::-webkit-details-marker { display: none; }
 .mode-casual { --c: var(--casual); }
 .mode-comfy { --c: var(--comfy); }
 .mode-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-bottom: 6px; box-shadow: 0 0 12px var(--c); }
-.mode-tile b { font-size: 17px; font-weight: 700; font-variation-settings: "wdth" 115; }
+.mode-tile b { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
 .mode-tile small { font-size: 11.5px; color: var(--ink-3); line-height: 1.3; }
 .mode-tile[aria-pressed="true"] {
   background: var(--c);
@@ -1011,9 +1023,8 @@ body:has(.sheet) { overflow: hidden; }
 }
 /* 4. the name rises in */
 .intro-word {
-  font: 700 30px/1 var(--display);
-  font-variation-settings: "wdth" 125;
-  letter-spacing: 0.02em;
+  font: 600 28px/1 var(--display);
+  letter-spacing: 0.01em;
   color: var(--ink);
   opacity: 0;
   animation: intro-rise 0.55s cubic-bezier(0.2, 0.8, 0.25, 1) 1.45s forwards;
@@ -1048,7 +1059,7 @@ body:has(.sheet) { overflow: hidden; }
 .wxd-wrap section { display: flex; flex-direction: column; gap: 6px; margin: 0; }
 .wxd-wrap .why { margin: 0; }
 .wxd-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.wxd-head b { font: 700 28px/1 var(--display); font-variation-settings: "wdth" 115; font-variant-numeric: tabular-nums; }
+.wxd-head b { font: 600 24px/1 var(--display); font-variant-numeric: tabular-nums; }
 .wxd-head span { color: var(--ink-2); font-size: 14px; }
 .wxd { width: 100%; height: auto; display: block; overflow: visible; }
 .wxd-band { fill: var(--ink); opacity: 0.05; }
@@ -1061,3 +1072,14 @@ body:has(.sheet) { overflow: hidden; }
 .wxd-key { display: inline-flex; align-items: center; gap: 5px; text-transform: none; letter-spacing: 0; font-family: var(--body); font-size: 12px; }
 .wxd-key i { display: inline-block; width: 14px; height: 0; border-top: 2px solid var(--ink); margin-left: 6px; }
 .wxd-key i.k-gust { border-top: 2px dashed var(--ink-3); }
+
+/* Weather card placeholder: same size as the real card, so nothing jumps
+   when the forecast arrives. */
+.wx-skel { aspect-ratio: 320 / 96; border-radius: 8px; background: var(--board-2); position: relative; overflow: hidden; }
+.wx-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
+  animation: shimmer 1.2s linear infinite;
+}

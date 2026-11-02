@@ -11,6 +11,16 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Clad">
+  <style>
+    /* Paint the right background from the very first frame (no white flash
+       before the stylesheet arrives). */
+    html, body { background: #0a0a0b; margin: 0; }
+    html:not([data-palette]), html:not([data-palette]) body { background: #0b1122; }
+    html[data-palette="espresso"], html[data-palette="espresso"] body { background: #170f09; }
+    html[data-palette="forest"], html[data-palette="forest"] body { background: #07150f; }
+    html[data-palette="plum"], html[data-palette="plum"] body { background: #120a1c; }
+    html[data-palette="oxblood"], html[data-palette="oxblood"] body { background: #18090e; }
+  </style>
   <script>
     // Apply the saved colour scheme before anything paints.
     try {
@@ -21,9 +31,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="preload" href="assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/outfit.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles/app.css">
   <script type="module" src="src/app.js"></script>
 </head>
