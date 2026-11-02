@@ -233,7 +233,8 @@ test('no collared shirts under hoodies, no flannel on fancy days', () => {
   const c = closet();
   const polo = { base: byType(c, 'polo'), mid: byType(c, 'hoodie'), bottom: byType(c, 'jeans', 'denim'), shoes: byType(c, 'leather-sneakers') };
   const tee = { ...polo, base: byType(c, 'tshirt', 'white') };
-  assert.ok(evaluate(tee, { mode: 'casual' }).score > evaluate(polo, { mode: 'casual' }).score);
+  assert.match(evaluate(polo, { mode: 'casual' }).veto, /polos don't go under/);
+  assert.equal(evaluate(tee, { mode: 'casual' }).veto, null);
   for (const p of run({ mode: 'fancy' }).picks.slice(0, 8)) {
     assert.notEqual(p.outfit.base?.type, 'flannel');
     assert.notEqual(p.outfit.mid?.type, 'hoodie');
@@ -253,4 +254,64 @@ test('full-day hours, compass and unit conversions for the weather view', async 
   assert.equal(toWind(100, 'F'), 62);
   assert.equal(toRain(25.4, 'F'), 1);
   assert.equal(fmtHour(0), '12am');
+});
+
+test('polos never go under sweaters, hoodies or cardigans', () => {
+  const c = closet();
+  for (const mid of ['sweater', 'hoodie', 'cardigan']) {
+    const o = { base: byType(c, 'polo'), mid: byType(c, mid), bottom: byType(c, 'chinos', 'navy'), shoes: byType(c, 'leather-sneakers') };
+    assert.ok(evaluate(o, { mode: 'casual' }).veto, mid);
+  }
+  for (const p of run({ weather: cold }).picks.concat(run({ mode: 'fancy', weather: cold }).picks)) {
+    assert.ok(!(p.outfit.base?.type === 'polo' && p.outfit.mid), 'no polo under a mid layer in any suggestion');
+  }
+});
+
+test('under a closed sweater, a collarless shirt is hidden; a collar or open layer shows', async () => {
+  const { baseShows } = await import('../src/core/rules.js');
+  const c = closet();
+  const sweater = byType(c, 'sweater', 'navy'), cardigan = byType(c, 'cardigan');
+  const tee = byType(c, 'tshirt', 'white'), oxford = byType(c, 'oxford', 'white');
+  const rest = { bottom: byType(c, 'trousers'), shoes: byType(c, 'dress-shoes') };
+  assert.equal(baseShows({ base: tee, mid: sweater }), 'hidden');
+  assert.equal(baseShows({ base: oxford, mid: sweater }), 'collar');
+  assert.equal(baseShows({ base: tee, mid: cardigan }), 'full');
+  assert.equal(baseShows({ base: tee }), 'full');
+  // On a fancy day a hidden tee is not "too casual"…
+  const hiddenTee = evaluate({ ...rest, base: tee, mid: sweater }, { mode: 'fancy' });
+  assert.ok(!hiddenTee.notes.some((n) => /too casual for fancy/.test(n.text) && n.text.includes('tshirt')), JSON.stringify(hiddenTee.notes));
+  assert.equal(formalityOf({ ...rest, base: tee, mid: sweater }), formalityOf({ ...rest, mid: sweater }), 'hidden tee adds no formality');
+  // …but a tee under an open cardigan, or on its own, still is.
+  assert.ok(evaluate({ ...rest, base: tee, mid: cardigan }, { mode: 'fancy' }).notes.some((n) => /too casual for fancy/.test(n.text)));
+  assert.ok(evaluate({ ...rest, base: tee }, { mode: 'fancy' }).notes.some((n) => /too casual for fancy/.test(n.text)));
+  // A collar does count: an oxford under a sweater changes how dressy it
+  // reads (here, with jeans and sneakers, it lifts it).
+  const casualRest = { bottom: byType(c, 'jeans', 'denim'), shoes: byType(c, 'leather-sneakers') };
+  assert.ok(formalityOf({ ...casualRest, base: oxford, mid: sweater }) > formalityOf({ ...casualRest, base: tee, mid: sweater }));
+});
+
+test('undershirts only ever go under a closed layer; a lone sweater gets a tip', () => {
+  const c = closet();
+  const under = { id: 'u1', type: 'undershirt', name: 'white undershirt', colors: [{ name: 'white', share: 1 }] };
+  const rest = { bottom: byType(c, 'jeans', 'denim'), shoes: byType(c, 'leather-sneakers') };
+  assert.ok(evaluate({ ...rest, base: under }, { mode: 'casual' }).veto, 'undershirt alone');
+  assert.ok(evaluate({ ...rest, base: under, mid: byType(c, 'cardigan') }, { mode: 'casual' }).veto, 'would show under a cardigan');
+  assert.equal(evaluate({ ...rest, base: under, mid: byType(c, 'sweater', 'navy') }, { mode: 'casual' }).veto, null);
+  const lone = evaluate({ ...rest, mid: byType(c, 'sweater', 'navy') }, { mode: 'casual' });
+  assert.ok(lone.notes.some((n) => n.tone === 'tip' && /T-shirt or undershirt/.test(n.text)));
+});
+
+test('one top does not reappear day after day under different sweaters', () => {
+  const items = closet();
+  const wears = [];
+  const dates = ['02', '03', '04', '05', '06'].map((d) => `2026-11-${d}`);
+  const seen = new Map();
+  for (const date of dates) {
+    const p = suggest({ items, saved: [], wears, mode: 'fancy', weather: cold, prefs: { neverPairs: [] }, model: emptyModel(), today: date, seed: date }).picks[0];
+    const visible = [p.outfit.base, p.outfit.mid, p.outfit.bottom].filter(Boolean);
+    for (const i of visible) seen.set(i.id, (seen.get(i.id) || 0) + 1);
+    wears.push({ date, itemIds: visible.map((i) => i.id), combo: p.combo, mode: 'fancy' });
+  }
+  const max = Math.max(...seen.values());
+  assert.ok(max <= 3, `a piece appeared ${max} times in 5 fancy days`);
 });

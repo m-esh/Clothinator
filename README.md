@@ -44,10 +44,16 @@ garment knowledge base, and **Fine-tune** lets you override it per item.
      when mornings are cold and afternoons warm
    - rain and wind
    - comfort, in Comfy mode
-3. **Your taste**: a small model on the phone learns from every wear, skip,
+3. **What shows**: under a closed sweater or hoodie, a collarless shirt is
+   hidden, so its dressiness, colour and pattern don't count; a collar (or
+   turtleneck) shows at the neck and does count; under an open cardigan or
+   vest the whole shirt shows. Polos never go under sweaters, hoodies or
+   cardigans. Undershirts are only suggested under a closed layer, and a
+   sweater on its own comes with "wear a T-shirt or undershirt under it".
+4. **Your taste**: a small model on the phone learns from every wear, skip,
    swap and save.
-4. **Variety**: the same top + bottom is held back for about two weeks, and
-   recently worn pieces rest for a couple of days. Shoes and jackets are
+5. **Variety**: the same visible top + bottom is held back for about two
+   weeks, and single pieces rest for most of a working week. Shoes and jackets are
    allowed to repeat.
 
 Each suggestion lists its reasons, and warnings show in red. Tap any piece to

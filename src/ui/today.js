@@ -7,7 +7,7 @@ import { state } from '../data/store.js';
 import { getWeather } from '../data/weather-service.js';
 import { backupDue, exportBackup } from '../data/backup.js';
 import { suggest, alternatives, assemble, comboKey } from '../core/generate.js';
-import { evaluate, MODES, itemIds, piecesOf } from '../core/rules.js';
+import { evaluate, MODES, itemIds, piecesOf, isProblem } from '../core/rules.js';
 import { describe, labelParts, toUnit } from '../core/weather.js';
 import { isoDate, isWeekend, weekModes, fancyNudge } from '../core/week.js';
 import { stats } from '../core/catalog.js';
@@ -310,13 +310,23 @@ function pickView(today, rerender, worn) {
 
   const outfit = cur.outfit;
   const ev = evaluate(outfit, ctxFor());
+
+  // When even the best option has real problems, say so, and say what
+  // would fix it, instead of presenting it as a good outfit.
+  const problems = ev.notes.filter(isProblem).length;
+  const gaps = cur.custom ? [] : closetGaps(state.items, W.summary, S.mode);
+  if (!cur.custom && (problems >= 2 || (gaps.length && (problems || !outfit.shoes)))) {
+    wrap.append(h('div', { class: 'banner struggle' },
+      problems >= 2 ? h('b', null, 'Best I can do with your closet right now.') : null,
+      gaps.length ? h('div', { class: problems >= 2 ? 'muted' : '' }, `Adding ${listJoin(gaps)} would give better picks.`) : null));
+  }
   const notes = cur.custom ? ev.notes : cur.notes;
   const flagged = new Set();
-  if (ev.veto || ev.notes.some((n) => n.tone !== 'good')) {
+  if (ev.veto || ev.notes.some(isProblem)) {
     // Mark the pieces named in a warning, where we can tell.
     for (const i of piecesOf(outfit)) {
       const n = displayName(i).toLowerCase();
-      if (ev.notes.some((x) => x.tone !== 'good' && x.text.includes(n))) flagged.add(i.id);
+      if (ev.notes.some((x) => isProblem(x) && x.text.includes(n))) flagged.add(i.id);
     }
   }
 
@@ -327,9 +337,11 @@ function pickView(today, rerender, worn) {
   }));
 
   const good = notes.filter((n) => n.tone === 'good').slice(0, 3);
-  const bad = notes.filter((n) => n.tone !== 'good');
+  const tips = notes.filter((n) => n.tone === 'tip');
+  const bad = notes.filter(isProblem);
   wrap.append(h('ul', { class: 'why' },
     good.map((n) => h('li', null, n.text)),
+    tips.map((n) => h('li', { class: 'tip' }, n.text)),
     bad.map((n) => h('li', { class: 'warn' }, n.text))));
 
   if (cur.pool != null && cur.pool < 5 && !cur.custom) {
@@ -369,6 +381,22 @@ function pickView(today, rerender, worn) {
   return wrap;
 }
 
+// What's missing from the closet that would most improve today's picks.
+function closetGaps(items, w, mode) {
+  const clean = items.filter((i) => !i.inLaundry && !i.blocked).map((i) => ({ i, s: stats(i) }));
+  const has = (fn) => clean.some(({ s }) => fn(s));
+  const gaps = [];
+  if (!has((s) => s.cat === 'shoes')) gaps.push('a pair of shoes');
+  if (w && !has((s) => s.cat === 'outer') && (w.feelsMin < 12 || w.feelsMax - w.feelsMin >= 6 || w.wet)) gaps.push(w.wet ? 'a rain jacket' : 'a light jacket');
+  if (has((s) => s.layer === 'mid') && !has((s) => s.layer === 'base' && !s.collar)) gaps.push('a plain T-shirt or undershirt');
+  if (mode === 'fancy' && !has((s) => s.layer === 'base' && s.collar && !s.polo && s.formality >= 3.5)) gaps.push('a button-down shirt');
+  if (mode === 'fancy' && !has((s) => s.cat === 'bottom' && s.formality >= 3)) gaps.push('chinos or dress trousers');
+  if (!has((s) => s.cat === 'bottom' || s.cat === 'onepiece')) gaps.push('some trousers');
+  return gaps.slice(0, 3);
+}
+
+const listJoin = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a.at(-1)}`);
+
 function wornView(worn, rerender) {
   const pieces = worn.itemIds.map(store.itemById).filter(Boolean);
   return h('section', null,
@@ -385,7 +413,7 @@ function wornView(worn, rerender) {
 
 function altRow(alt, onPick) {
   const vetoed = alt.ev.veto;
-  const warn = alt.ev.notes.find((n) => n.tone !== 'good');
+  const warn = alt.ev.notes.find(isProblem);
   const note = vetoed || warn?.text || alt.ev.notes.find((n) => n.tone === 'good')?.text || '';
   return h('button', { class: `alt${vetoed ? ' vetoed' : ''}`, onclick: onPick },
     h('div', { class: 'list' }, h('div', { class: 'thumb' }, itemPic(alt.item))),

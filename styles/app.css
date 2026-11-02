@@ -1289,3 +1289,10 @@ select.input { border: 0; }
 
 /* swipes: the page is moved by script while a finger is down */
 #view { will-change: auto; touch-action: pan-y; }
+
+/* advice lines (e.g. "wear a T-shirt under the sweater"): neutral, not a reason or a problem */
+.why li.tip { color: var(--ink-2); }
+.why li.tip::before { border-color: var(--ink-3); border-style: dashed; }
+
+.banner.struggle { display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px; }
+.banner.struggle b { font-weight: 600; }

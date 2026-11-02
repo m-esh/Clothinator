@@ -5,7 +5,7 @@ import { board, miniBoard, itemPic, displayName } from './board.js';
 import * as store from '../data/store.js';
 import { state } from '../data/store.js';
 import { assemble } from '../core/generate.js';
-import { evaluate, MODES } from '../core/rules.js';
+import { evaluate, MODES, isProblem } from '../core/rules.js';
 import { CATEGORIES, stats } from '../core/catalog.js';
 import { isoDate } from '../core/week.js';
 
@@ -24,7 +24,7 @@ export function renderOutfits(root) {
   root.append(h('ul', { class: 'list' }, state.outfits.map((o) => {
     const pieces = o.itemIds.map(store.itemById).filter(Boolean);
     const ev = evaluate(assemble(pieces), { mode: o.mode || 'casual', prefs: state.prefs });
-    const warns = ev.notes.filter((n) => n.tone !== 'good').length;
+    const warns = ev.notes.filter(isProblem).length;
     const out = pieces.filter((p) => p.inLaundry).length;
     return h('li', { style: { display: 'block', cursor: 'pointer' }, onclick: () => outfitSheet(o) },
       miniBoard(pieces),
@@ -43,7 +43,7 @@ function outfitSheet(o) {
   const ev = evaluate(fit, { mode, prefs: state.prefs });
   sheet(o.name || 'Outfit', (close) => h('div', null,
     board(fit),
-    h('ul', { class: 'why' }, ev.notes.map((n) => h('li', { class: n.tone === 'good' ? '' : 'warn' }, n.text))),
+    h('ul', { class: 'why' }, ev.notes.map((n) => h('li', { class: isProblem(n) ? 'warn' : n.tone === 'tip' ? 'tip' : '' }, n.text))),
     h('div', { class: 'row wrap', style: { marginTop: '18px' } },
       h('button', { class: 'btn', disabled: pieces.some((p) => p.inLaundry), onclick: async () => {
         close();
@@ -87,8 +87,8 @@ export function renderBuilder(root, rerender, editId = null) {
   root.append(h('button', { class: 'btn ghost block', style: { marginTop: '14px' }, onclick: () => pickerSheet(rerender) }, pieces.length ? 'Add or change pieces' : 'Choose pieces'));
 
   if (ev) {
-    const bad = ev.notes.filter((n) => n.tone !== 'good');
-    const good = ev.notes.filter((n) => n.tone === 'good');
+    const bad = ev.notes.filter(isProblem);
+    const good = ev.notes.filter((n) => !isProblem(n));
     root.append(h('ul', { class: 'why' },
       good.map((n) => h('li', null, n.text)),
       bad.map((n) => h('li', { class: 'warn' }, n.text))));

@@ -14,6 +14,10 @@ export const MODES = {
 
 export const SLOTS = ['outer', 'mid', 'base', 'onepiece', 'bottom', 'shoes'];
 
+// Note tones: 'good' (a reason it works), 'tip' (advice), 'warn' and 'bad'
+// (problems; 'bad' rules the outfit out).
+export const isProblem = (n) => n.tone === 'warn' || n.tone === 'bad';
+
 // Every item in an outfit, in a stable order.
 export function piecesOf(outfit) {
   return [...SLOTS.map((s) => outfit[s]).filter(Boolean), ...(outfit.accessories || [])];
@@ -23,13 +27,28 @@ export const itemIds = (outfit) => piecesOf(outfit).map((i) => i.id);
 
 const name = (i) => (i.name || i.type).toLowerCase();
 
-// Weighted formality of the outfit's main pieces.
+// How much of the base layer shows:
+//   'full'   — no mid, or an open one (cardigan, vest)
+//   'collar' — under a closed mid, with a collar or high neck that shows
+//   'hidden' — under a closed mid, collarless: only the neckline shows
+export function baseShows(outfit) {
+  if (!outfit.base || !outfit.mid) return 'full';
+  const mid = stats(outfit.mid);
+  if (mid.open) return 'full';
+  return stats(outfit.base).collar ? 'collar' : 'hidden';
+}
+
+// A sweater or hoodie on its own: you'd wear something thin under it.
+export const impliedUnder = (outfit) => !!outfit.mid && !outfit.base && !stats(outfit.mid).open;
+
+// Weighted formality of what can be seen.
 export function formalityOf(outfit) {
   const parts = [];
   const add = (item, w) => item && parts.push([stats(item).formality, w]);
+  const shows = baseShows(outfit);
   add(outfit.outer, 1.2);
   add(outfit.mid, 1);
-  add(outfit.base, outfit.mid ? 0.6 : 1);
+  add(outfit.base, !outfit.mid ? 1 : shows === 'full' ? 0.8 : shows === 'collar' ? 0.6 : 0);
   add(outfit.onepiece, 2);
   add(outfit.bottom, 1.2);
   add(outfit.shoes, 0.9);
@@ -40,7 +59,8 @@ export function formalityOf(outfit) {
 export function warmthOf(outfit) {
   const w = (i, k = 1) => (i ? stats(i).warmth * k : 0);
   const extras = (outfit.accessories || []).reduce((a, i) => a + (stats(i).cold ? stats(i).warmth : 0), 0);
-  const core = w(outfit.base) + w(outfit.mid, 0.9) + w(outfit.onepiece) + w(outfit.bottom, 0.6) + w(outfit.shoes, 0.2) + extras;
+  const implied = impliedUnder(outfit) ? 0.7 : 0; // the thin layer under a lone sweater
+  const core = w(outfit.base) + implied + w(outfit.mid, 0.9) + w(outfit.onepiece) + w(outfit.bottom, 0.6) + w(outfit.shoes, 0.2) + extras;
   return { core, total: core + w(outfit.outer) };
 }
 
@@ -82,11 +102,23 @@ export function evaluate(outfit, ctx = {}) {
     if (ids.has(a) && ids.has(b)) hard('a pairing you said never to suggest');
   }
 
+  // ── what's under a sweater ────────────────────────────────
+  // Only what shows is judged on looks; a hidden base still counts for
+  // warmth and comfort.
+  const shows = baseShows(outfit);
+  const seen = core.filter((s) => !(s === 'base' && shows === 'hidden'));
+  if (S.base?.polo && S.mid) hard(`polos don't go under a ${S.mid.label.toLowerCase()}`);
+  if (S.base?.under) {
+    if (!S.mid) hard('an undershirt on its own');
+    else if (shows === 'full') hard(`the undershirt would show under the ${S.mid.label.toLowerCase()}`);
+  }
+  if (impliedUnder(outfit)) notes.push({ tone: 'tip', text: `wear a T-shirt or undershirt under the ${S.mid.label.toLowerCase()}` });
+
   // ── formality ─────────────────────────────────────────────
-  const fs = core.map((s) => S[s].formality);
+  const fs = seen.map((s) => S[s].formality);
   if (fs.length >= 2) {
-    const hi = core.reduce((a, s) => (S[s].formality > S[a].formality ? s : a));
-    const lo = core.reduce((a, s) => (S[s].formality < S[a].formality ? s : a));
+    const hi = seen.reduce((a, s) => (S[s].formality > S[a].formality ? s : a));
+    const lo = seen.reduce((a, s) => (S[s].formality < S[a].formality ? s : a));
     const spread = S[hi].formality - S[lo].formality;
     if (spread >= 3.5) hard(`${name(outfit[hi])} is far too dressy for ${name(outfit[lo])}`);
     else if (spread > 2.5) {
@@ -102,7 +134,7 @@ export function evaluate(outfit, ctx = {}) {
 
   // One clearly casual piece drags a fancy outfit down, however sharp the rest.
   if (mode.key === 'fancy') {
-    for (const sl of core) {
+    for (const sl of seen) {
       if (S[sl].formality < 2.25 && !(sl === 'outer' && (w?.wet || w?.windy || (w && w.feelsMin < 5)))) {
         score -= 0.7;
         warn(`${name(outfit[sl])} is too casual for fancy`);
@@ -111,7 +143,7 @@ export function evaluate(outfit, ctx = {}) {
   }
 
   // ── classic mistakes ──────────────────────────────────────
-  if (S.mid && S.base && ['hoodie', 'sweatshirt', 'fleece'].includes(S.mid.key) && ['polo', 'dress-shirt', 'blouse'].includes(S.base.key)) {
+  if (S.mid && S.base && ['hoodie', 'sweatshirt', 'fleece'].includes(S.mid.key) && ['dress-shirt', 'blouse'].includes(S.base.key)) {
     score -= 0.9;
     warn(`${name(outfit.base)} under a ${S.mid.label.toLowerCase()} looks off`);
   }
@@ -126,7 +158,7 @@ export function evaluate(outfit, ctx = {}) {
   }
 
   // ── pattern ───────────────────────────────────────────────
-  const loudPatterns = core.map((s) => S[s].pattern).filter((p) => p && p !== 'solid' && p !== 'texture');
+  const loudPatterns = seen.map((s) => S[s].pattern).filter((p) => p && p !== 'solid' && p !== 'texture');
   if (loudPatterns.length >= 3) hard('three patterns at once');
   else if (loudPatterns.length === 2) {
     const busy = loudPatterns.filter((p) => p === 'graphic' || p === 'print').length;
@@ -138,7 +170,10 @@ export function evaluate(outfit, ctx = {}) {
   }
 
   // ── colour ────────────────────────────────────────────────
-  const h = harmony(piecesOf(outfit).map((i) => ({ cat: stats(i).cat, colors: i.colors || [] })));
+  // A hidden base adds no colour; a collar adds a little.
+  const h = harmony(piecesOf(outfit)
+    .filter((i) => !(i === outfit.base && shows === 'hidden'))
+    .map((i) => ({ cat: i === outfit.base && shows === 'collar' ? 'collar' : stats(i).cat, colors: i.colors || [] })));
   score += h.score;
   notes.push(...h.notes);
 

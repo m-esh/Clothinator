@@ -79,7 +79,7 @@ export async function aiMask(canvas, onProgress) {
 
 // Plain-language prompts CLIP understands better than catalog labels.
 const PHRASE = {
-  tshirt: 'plain t-shirt', 'graphic-tee': 't-shirt with a graphic print', longsleeve: 'long sleeve t-shirt',
+  tshirt: 'plain t-shirt', undershirt: 'thin white undershirt', 'graphic-tee': 't-shirt with a graphic print', longsleeve: 'long sleeve t-shirt',
   tank: 'tank top', oxford: 'casual button-down shirt', 'dress-shirt': 'formal dress shirt', flannel: 'plaid flannel shirt',
   'linen-shirt': 'linen shirt', sweater: 'knit sweater', sweatshirt: 'crewneck sweatshirt', 'quarter-zip': 'quarter-zip pullover',
   vest: 'sweater vest', 'denim-jacket': 'denim jacket', overshirt: 'overshirt jacket', 'chore-jacket': 'chore jacket',

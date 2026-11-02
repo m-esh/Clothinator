@@ -34,7 +34,7 @@ const SHAPES = {
 };
 
 const BY_TYPE = {
-  tshirt: 'tee', 'graphic-tee': 'tee', polo: 'tee', tank: 'tank',
+  tshirt: 'tee', undershirt: 'tee', 'graphic-tee': 'tee', polo: 'tee', tank: 'tank',
   longsleeve: 'knit', henley: 'knit', turtleneck: 'knit',
   oxford: 'shirt', 'dress-shirt': 'shirt', flannel: 'shirt', 'linen-shirt': 'shirt', blouse: 'shirt',
   sweater: 'knit', sweatshirt: 'knit', 'quarter-zip': 'knit', cardigan: 'knit', vest: 'tank', fleece: 'knit', hoodie: 'hoodie',

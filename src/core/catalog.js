@@ -7,6 +7,10 @@
 //
 // Tops come in two layers: `base` (worn against the skin) and `mid` (worn over
 // a base). A mid marked `alone` can also be worn on its own.
+//
+// What shows of a base under a mid: `collar` bases show at the neck under a
+// closed mid; collarless ones are hidden. `open` mids (cardigan, vest) show
+// the whole base. An `under` base is only ever worn beneath something.
 
 export const CATEGORIES = [
   { key: 'top', label: 'Tops' },
@@ -22,24 +26,25 @@ const T = (key, label, cat, f, w, c, extra = {}) => ({ key, label, cat, f, w, c,
 export const TYPES = [
   // tops — base
   T('tshirt', 'T-shirt', 'top', 1.5, 1, 5, { layer: 'base' }),
+  T('undershirt', 'Undershirt', 'top', 1, 0.7, 5, { layer: 'base', under: true }),
   T('graphic-tee', 'Graphic tee', 'top', 1, 1, 5, { layer: 'base', pattern: 'graphic' }),
   T('longsleeve', 'Long-sleeve tee', 'top', 1.5, 1.5, 5, { layer: 'base' }),
   T('tank', 'Tank top', 'top', 0.5, 0.5, 5, { layer: 'base', summer: true }),
-  T('polo', 'Polo', 'top', 2.5, 1, 4, { layer: 'base' }),
+  T('polo', 'Polo', 'top', 2.5, 1, 4, { layer: 'base', collar: true, polo: true }),
   T('henley', 'Henley', 'top', 2, 1.5, 5, { layer: 'base' }),
-  T('oxford', 'Oxford / button-down', 'top', 3.5, 1.5, 4, { layer: 'base' }),
-  T('dress-shirt', 'Dress shirt', 'top', 4.5, 1.5, 3, { layer: 'base', tuck: true }),
-  T('flannel', 'Flannel shirt', 'top', 2, 2.5, 4, { layer: 'base', pattern: 'check' }),
-  T('linen-shirt', 'Linen shirt', 'top', 3, 1, 4, { layer: 'base', summer: true }),
-  T('blouse', 'Blouse', 'top', 3.5, 1, 4, { layer: 'base' }),
-  T('turtleneck', 'Turtleneck', 'top', 3.5, 2.5, 4, { layer: 'base' }),
+  T('oxford', 'Oxford / button-down', 'top', 3.5, 1.5, 4, { layer: 'base', collar: true }),
+  T('dress-shirt', 'Dress shirt', 'top', 4.5, 1.5, 3, { layer: 'base', tuck: true, collar: true }),
+  T('flannel', 'Flannel shirt', 'top', 2, 2.5, 4, { layer: 'base', pattern: 'check', collar: true }),
+  T('linen-shirt', 'Linen shirt', 'top', 3, 1, 4, { layer: 'base', summer: true, collar: true }),
+  T('blouse', 'Blouse', 'top', 3.5, 1, 4, { layer: 'base', collar: true }),
+  T('turtleneck', 'Turtleneck', 'top', 3.5, 2.5, 4, { layer: 'base', collar: true }),
   // tops — mid
   T('sweater', 'Sweater / knit', 'top', 3, 3, 4, { layer: 'mid', alone: true, knit: true }),
   T('sweatshirt', 'Sweatshirt', 'top', 1.5, 3, 5, { layer: 'mid', alone: true, knit: true }),
   T('hoodie', 'Hoodie', 'top', 1, 3, 5, { layer: 'mid', alone: true, knit: true }),
   T('quarter-zip', 'Quarter-zip', 'top', 2.5, 2.5, 4, { layer: 'mid', alone: true, knit: true }),
-  T('cardigan', 'Cardigan', 'top', 3, 2.5, 5, { layer: 'mid', knit: true }),
-  T('vest', 'Sweater vest', 'top', 3, 1.5, 4, { layer: 'mid', knit: true }),
+  T('cardigan', 'Cardigan', 'top', 3, 2.5, 5, { layer: 'mid', knit: true, open: true }),
+  T('vest', 'Sweater vest', 'top', 3, 1.5, 4, { layer: 'mid', knit: true, open: true }),
   T('fleece', 'Fleece', 'top', 1, 3, 5, { layer: 'mid', alone: true, knit: true }),
   // outer
   T('denim-jacket', 'Denim jacket', 'outer', 2, 2, 4),

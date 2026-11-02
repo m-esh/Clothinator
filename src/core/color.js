@@ -103,7 +103,7 @@ export function harmony(pieces) {
   const groups = [];
   let loudPieces = 0;
   for (const p of pieces) {
-    const weight = p.cat === 'accessory' ? 0.3 : p.cat === 'shoes' ? 0.6 : 1;
+    const weight = p.cat === 'accessory' ? 0.3 : p.cat === 'collar' ? 0.35 : p.cat === 'shoes' ? 0.6 : 1;
     let pieceLoud = false;
     for (const { name, share } of p.colors || []) {
       const c = COLOR[name];

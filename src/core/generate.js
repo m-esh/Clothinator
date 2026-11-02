@@ -2,7 +2,7 @@
 // is passed in, so it runs the same in the app and in tests.
 
 import { stats } from './catalog.js';
-import { evaluate, MODES, piecesOf } from './rules.js';
+import { evaluate, MODES, piecesOf, baseShows } from './rules.js';
 import { tasteScore } from './taste.js';
 
 // ── small utilities ─────────────────────────────────────────
@@ -26,13 +26,20 @@ export function rng(seed) {
 const DAY = 86400000;
 export const daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / DAY);
 
-// What counts as "the same outfit again": the same top(s) with the same
-// bottom. Shoes, jackets and accessories are allowed to repeat — with ~30
-// items they have to.
+// What counts as "the same outfit again": the same visible top(s) with the
+// same bottom. A T-shirt hidden under a sweater doesn't make it a new look.
+// Shoes, jackets and accessories are allowed to repeat — with ~30 items they
+// have to.
 export function comboKey(outfit) {
-  return [outfit.base, outfit.mid, outfit.onepiece, outfit.bottom]
+  const base = baseShows(outfit) === 'hidden' ? null : outfit.base;
+  return [base, outfit.mid, outfit.onepiece, outfit.bottom]
     .filter(Boolean).map((i) => i.id).sort().join('+');
 }
+
+// How much a piece worn `d` days ago is held back. Main pieces rest for
+// most of a working week, so one top doesn't reappear under every sweater.
+const REST = [1.2, 0.8, 0.55, 0.35, 0.2, 0.1, 0.1];
+const REST_LIGHT = [0.3, 0.15, 0.1]; // shoes and jackets repeat more
 
 export function fullKey(outfit) {
   return piecesOf(outfit).map((i) => i.id).sort().join('+');
@@ -63,14 +70,15 @@ function varietyScore(outfit, hist, today) {
     note = 'a combination you haven\'t worn yet';
   }
   for (const i of piecesOf(outfit)) {
-    const cat = stats(i).cat;
-    if (cat === 'accessory') continue;
+    const st = stats(i);
+    // A T-shirt hidden under a sweater still rotates (it's the same shirt);
+    // undershirts don't: you'd own several.
+    if (st.cat === 'accessory' || st.under) continue;
     const li = hist.item.get(i.id);
-    const light = cat === 'shoes' || cat === 'outer';
+    const table = st.cat === 'shoes' || st.cat === 'outer' ? REST_LIGHT : REST;
     if (li) {
-      const d = daysBetween(li, today);
-      if (d <= 0) s -= light ? 0.3 : 1.2;
-      else if (d <= 2) s -= light ? 0.1 : 0.35;
+      const d = Math.max(0, daysBetween(li, today));
+      if (d < table.length) s -= table[d];
       else if (d >= 21) s += 0.1;
     } else s += 0.1;
   }
