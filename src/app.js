@@ -129,6 +129,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || reloaded) return;
     reloaded = true;
+    try { sessionStorage.setItem('skipIntro', '1'); } catch { /* fine */ }
     location.reload();
   });
   navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {

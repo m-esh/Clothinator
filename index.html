@@ -28,6 +28,45 @@
   <script type="module" src="src/app.js"></script>
 </head>
 <body>
+  <!-- Launch intro: the C draws, the hanger hangs and swings, the name rises.
+       Inline so it shows at first paint and covers loading; tap to skip. -->
+  <div id="intro" aria-hidden="true">
+    <div class="intro-stage">
+      <svg class="intro-mark" viewBox="170 120 684 650">
+        <defs>
+          <linearGradient id="intro-metal" x1="0" y1="150" x2="0" y2="760" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#ffffff"/>
+            <stop offset="0.32" stop-color="#dcdfe4"/>
+            <stop offset="0.55" stop-color="#8f949d"/>
+            <stop offset="0.7" stop-color="#cdd0d6"/>
+            <stop offset="0.9" stop-color="#eef0f3"/>
+            <stop offset="1" stop-color="#a5aab3"/>
+          </linearGradient>
+        </defs>
+        <g fill="none" stroke="url(#intro-metal)" stroke-linecap="round" stroke-linejoin="round">
+          <path class="intro-c" pathLength="1" stroke-width="108" d="M627 234 A 150 150 0 1 0 627 426"/>
+          <g class="intro-hanger">
+            <path class="intro-stem" pathLength="1" stroke-width="70" d="M512 470 L 512 506"/>
+            <path class="intro-body" pathLength="1" stroke-width="70" d="M512 506 L 238 686 Q 204 710 238 732 L 786 732 Q 820 710 786 686 Z"/>
+          </g>
+        </g>
+      </svg>
+      <div class="intro-word">Clad</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var el = document.getElementById('intro');
+      var skip = false;
+      try { skip = sessionStorage.getItem('skipIntro') === '1'; sessionStorage.removeItem('skipIntro'); } catch (e) {}
+      if (skip) { el.remove(); return; }
+      var gone = false;
+      function remove() { if (!gone) { gone = true; el.remove(); } }
+      el.addEventListener('animationend', function (e) { if (e.target === el) remove(); });
+      el.addEventListener('pointerdown', function () { el.classList.add('skip'); setTimeout(remove, 260); });
+      setTimeout(remove, 3200); // never stay up, whatever happens to animations
+    })();
+  </script>
   <main id="view"></main>
   <nav id="tabs" class="tabs glass" aria-label="Sections"></nav>
 </body>
