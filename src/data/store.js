@@ -24,6 +24,7 @@ const DEFAULT_PREFS = {
   neverPairs: [],
   location: null, // null = use the phone's location
   palette: 'graphite',
+  mascot: 'fox', // or 'bulldog' | 'corgi' | 'valet' | 'none'
   hair: { on: false, styles: null }, // styles: null = not set up yet
   lastBackupAt: null,
   backupSnoozedAt: null,

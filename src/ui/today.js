@@ -12,6 +12,7 @@ import { describe, labelParts, toUnit } from '../core/weather.js';
 import { isoDate, isWeekend, weekModes, fancyNudge } from '../core/week.js';
 import { stats } from '../core/catalog.js';
 import { openWeather } from './weather-sheet.js';
+import * as valet from './mascot.js';
 import { pickHair, DEFAULT_STYLES } from '../core/hair.js';
 
 // Morning session: survives closing the app, resets the next day.
@@ -123,9 +124,10 @@ export async function renderToday(root, rerender) {
   root.append(header(today, rerender));
 
   if (!tops || !bottoms) {
+    const m = valet.current();
     root.append(h('div', { class: 'empty' },
       h('h2', null, items.length ? 'Almost there' : 'Start with your closet'),
-      h('p', null, items.length
+      !items.length && m ? valet.says([m.voice.emptyCloset]) : h('p', null, items.length
         ? `Add at least one ${tops ? 'bottom' : 'top'} and I can start putting outfits together.`
         : 'Photograph your clothes one at a time, laid flat on the floor. Around 30 pieces is plenty.'),
       h('a', { class: 'btn', href: '#add' }, 'Add clothes'),
@@ -138,11 +140,14 @@ export async function renderToday(root, rerender) {
   if (isWeekend(today) && !S.weekend) {
     root.append(h('div', { class: 'empty' },
       h('h2', null, 'It\'s the weekend'),
-      h('p', null, 'Nothing to plan unless you want to.'),
+      valet.current() ? valet.says([valet.current().voice.weekend]) : h('p', null, 'Nothing to plan unless you want to.'),
       h('button', { class: 'btn ghost', onclick: () => { S.weekend = true; saveSession(); rerender(); } }, 'Plan today'),
     ));
     return;
   }
+
+  // ── the valet's line or two ──
+  root.append(valetLine(today));
 
   // ── mode ──
   const nudge = fancyNudge(state.wears, today, S.mode);
@@ -157,7 +162,7 @@ export async function renderToday(root, rerender) {
   ));
 
   if (!S.mode) {
-    root.append(h('p', { class: 'muted', style: { marginTop: '22px' } }, 'Pick how today feels and I\'ll pick the clothes.'));
+    if (!valet.current()) root.append(h('p', { class: 'muted', style: { marginTop: '22px' } }, 'Pick how today feels and I\'ll pick the clothes.'));
     return;
   }
 
@@ -318,7 +323,7 @@ function pickView(today, rerender, worn) {
   const gaps = cur.custom ? [] : closetGaps(state.items, W.summary, S.mode);
   if (!cur.custom && (problems >= 2 || (gaps.length && (problems || !outfit.shoes)))) {
     wrap.append(h('div', { class: 'banner struggle' },
-      problems >= 2 ? h('b', null, 'Best I can do with your closet right now.') : null,
+      problems >= 2 && !valet.current() ? h('b', null, 'Best I can do with your closet right now.') : null,
       gaps.length ? h('div', { class: problems >= 2 ? 'muted' : '' }, `Adding ${listJoin(gaps)} would give better picks.`) : null));
   }
   const notes = cur.custom ? ev.notes : cur.notes;
@@ -409,6 +414,23 @@ function closetGaps(items, w, mode) {
 const listJoin = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a.at(-1)}`);
 
 const hairName = (id) => (state.prefs.hair?.styles || DEFAULT_STYLES).find((s) => s.id === id)?.name || 'Hairstyle';
+
+// What the valet says above the mood tiles: a greeting with the weather,
+// then whatever fits the moment (ask, explain the pick, or sign off).
+function valetLine(today) {
+  const m = valet.current();
+  if (!m) return null;
+  const v = m.voice;
+  const first = valet.greeting(v, W.summary);
+  if (!S.mode) return valet.says([first, v.ask]);
+  const worn = store.wearsOn(today).at(-1);
+  if (worn && !S.changing) return valet.says([first, v.worn]);
+  const cur = currentOutfit(today);
+  if (cur.loading || !cur.outfit) return valet.says([first]);
+  const ev = evaluate(cur.outfit, ctxFor());
+  if (!cur.custom && ev.notes.filter(isProblem).length >= 2) return valet.says([first, v.struggle]);
+  return valet.says([first, valet.reasonLine(v, cur.custom ? ev.notes : (cur.notes || ev.notes), S.mode)]);
+}
 
 // Today's hairstyle, when hair is switched on in Settings.
 function todaysHair(today) {

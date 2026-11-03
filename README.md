@@ -82,6 +82,17 @@ are never suggested.
   the moods they suit; Today suggests one with the outfit, prefers styles
   that hold up in wind and rain, avoids repeating yesterday's, and logs it.
 
+## Your valet
+
+Clad has someone behind it. Pick one in **Settings → Your valet** (or turn
+it off): **Barnaby** the fox (default), **Humphrey** the bulldog,
+**Reginald** the corgi or **Ashworth**, a gentleman's gentleman. Each has
+its own voice and says a line or two on Today: a greeting with the weather,
+then what kind of day it is, why it picked the outfit, or a sign-off once
+you've worn it. They also appear in the launch intro, at the weekend and on
+an empty closet. Portraits are in `src/mascot-art.js`, voices in
+`src/ui/mascot.js`.
+
 ## Backups
 
 Everything lives on the phone. Settings → **Save a backup** writes one file

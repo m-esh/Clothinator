@@ -19,3 +19,8 @@ export function applyPalette(key) {
   // A copy for the next launch, read before the first paint (see index.html).
   try { localStorage.setItem('palette', p.key); } catch { /* storage blocked: fine */ }
 }
+
+// The intro reads the valet before the app loads; keep a copy for it.
+export function rememberMascot(key) {
+  try { localStorage.setItem('mascot', key || 'fox'); } catch { /* fine */ }
+}

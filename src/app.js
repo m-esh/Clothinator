@@ -11,7 +11,7 @@ import { renderLaundry } from './ui/laundry.js';
 import { renderSettings } from './ui/settings.js';
 import { renderLeaderboard } from './ui/leaderboard.js';
 import { mountTabs, updateTabs } from './ui/tabbar.js';
-import { applyPalette } from './ui/palette.js';
+import { applyPalette, rememberMascot } from './ui/palette.js';
 import { enableSwipes } from './ui/swipe.js';
 
 // Resolves once the launch intro has finished (see index.html).
@@ -65,6 +65,7 @@ async function render() {
   const key = `${r.name}/${r.arg}`;
   const frag = h('div');
   applyPalette(state.prefs.palette);
+  rememberMascot(state.prefs.mascot);
   if (r.name !== 'today') delete document.documentElement.dataset.mode;
   const rerender = () => schedule();
   switch (r.name) {

@@ -8,6 +8,7 @@ import { geocode } from '../core/weather.js';
 import { exportBackup, importBackup } from '../data/backup.js';
 import { invalidateWeather } from './today.js';
 import { PALETTES } from './palette.js';
+import * as valet from './mascot.js';
 import { DEFAULT_STYLES } from '../core/hair.js';
 
 let models = null; // { background, classify } once checked
@@ -38,6 +39,21 @@ export function renderSettings(root, rerender) {
       },
       h('span', { class: 'dots' }, pal.dots.map((c) => h('i', { style: { background: c } }))),
       h('b', { style: { color: '#f0f0f2' } }, pal.label)))),
+  ));
+
+  // ── valet ──
+  const chosen = p.mascot ?? 'fox';
+  root.append(h('section', null,
+    h('div', { class: 'label' }, 'Your valet'),
+    h('div', { class: 'valets', role: 'group', 'aria-label': 'Your valet' },
+      valet.MASCOT_KEYS.map((k) => h('button', {
+        key: k, class: 'valet-pick', 'aria-pressed': String(chosen === k),
+        onclick: () => store.updatePrefs({ mascot: k }),
+      }, valet.avatar(k, 56), h('b', null, valet.art(k).name), h('span', null, valet.art(k).kind))),
+      h('button', { key: 'none', class: 'valet-pick none', 'aria-pressed': String(chosen === 'none'), onclick: () => store.updatePrefs({ mascot: 'none' }) },
+        h('span', { class: 'valet-avatar off', style: { width: '56px', height: '56px' } }, 'Off'), h('b', null, 'No valet'), h('span', null, 'Just the app'))),
+    chosen !== 'none' && valet.art(chosen) ? h('div', { style: { marginTop: '12px' } },
+      valet.says([valet.voice(chosen).hello, valet.art(chosen).blurb], { key: chosen })) : null,
   ));
 
   // ── weather ──

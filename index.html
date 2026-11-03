@@ -28,6 +28,7 @@
       if (p !== 'denim') document.documentElement.dataset.palette = p;
     } catch (e) { document.documentElement.dataset.palette = 'graphite'; }
   </script>
+  <script src="src/mascot-art.js"></script>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
@@ -73,6 +74,17 @@
       var skip = false;
       try { skip = sessionStorage.getItem('skipIntro') === '1'; sessionStorage.removeItem('skipIntro'); } catch (e) {}
       if (skip) { el.remove(); resolve(); return; }
+      // The valet steps in under the name.
+      try {
+        var mk = localStorage.getItem('mascot') || 'fox';
+        var m = mk !== 'none' && window.CLAD_MASCOTS && window.CLAD_MASCOTS[mk];
+        if (m) {
+          var v = document.createElement('div');
+          v.className = 'intro-valet';
+          v.innerHTML = '<span class="valet-avatar">' + m.svg + '</span><span>' + m.name + ' at your service</span>';
+          el.querySelector('.intro-stage').appendChild(v);
+        }
+      } catch (e) {}
       var gone = false;
       function remove() { if (!gone) { gone = true; el.remove(); resolve(); } }
       el.addEventListener('animationend', function (e) { if (e.target === el) remove(); });
@@ -83,7 +95,7 @@
         el.classList.add('skip');
         setTimeout(remove, 260);
       });
-      setTimeout(remove, 3400); // never stay up, whatever happens to animations
+      setTimeout(remove, 3800); // never stay up, whatever happens to animations
     })();
   </script>
   <div id="navbar" aria-hidden="true"></div>

@@ -329,3 +329,22 @@ test('hairstyles: fit the mood, hold up in bad weather, rotate', async () => {
   assert.notEqual(a.id, b.id, 'Change gives a different style');
   assert.equal(pickHair([], { mode: 'casual', today: '2026-11-03' }), null);
 });
+
+test('every valet has a line for every situation, and reasons map to them', async () => {
+  const { voice, reasonLine, MASCOT_KEYS } = await import('../src/ui/mascot.js');
+  const needed = ['rain', 'layer', 'wind', 'saved', 'neutrals', 'accent', 'analogous', 'complementary', 'fancy', 'casual', 'comfy', 'fresh', 'revival', 'taste', 'temp'];
+  assert.deepEqual(MASCOT_KEYS, ['fox', 'bulldog', 'corgi', 'valet']);
+  for (const k of MASCOT_KEYS) {
+    const v = voice(k);
+    for (const r of needed) assert.ok(v.reason[r], `${k} missing ${r}`);
+    for (const f of ['ask', 'struggle', 'worn', 'weekend', 'emptyCloset', 'hello']) assert.ok(v[f], `${k} missing ${f}`);
+    for (const t of ['freezing', 'cold', 'cool', 'mild', 'warm', 'hot']) assert.ok(v.temp[t], `${k} missing temp ${t}`);
+  }
+  const v = voice('fox');
+  const n = (...t) => t.map((text) => ({ tone: 'good', text }));
+  assert.equal(reasonLine(v, n('all neutrals, nothing to clash', 'rain-ready'), 'casual'), v.reason.rain, 'weather comes first');
+  assert.equal(reasonLine(v, n('navy as the one accent'), 'casual'), 'Just the navy for a bit of colour. Tasteful.');
+  assert.match(reasonLine(voice('bulldog'), n('rust and denim balance each other'), 'casual'), /^Rust with denim/);
+  assert.equal(reasonLine(v, n('properly sharp'), 'fancy'), v.reason.fancy);
+  assert.equal(reasonLine(v, [{ tone: 'warn', text: 'two patterns competing' }], 'casual'), null);
+});

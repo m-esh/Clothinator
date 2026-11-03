@@ -8,6 +8,7 @@ import { CATEGORIES, stats, PATTERNS, FABRIC } from '../core/catalog.js';
 import { COLOR } from '../core/color.js';
 import { isoDate } from '../core/week.js';
 import { washTub } from './glyphs.js';
+import * as valet from './mascot.js';
 
 let filter = 'all';
 
@@ -27,7 +28,7 @@ export function renderCloset(root, rerender) {
 
   if (!items.length) {
     root.append(h('div', { class: 'empty' },
-      h('p', null, 'Nothing here yet.'),
+      valet.current() ? valet.says([valet.current().voice.emptyCloset]) : h('p', null, 'Nothing here yet.'),
       h('a', { class: 'btn', href: '#add' }, 'Add a piece')));
     return;
   }
