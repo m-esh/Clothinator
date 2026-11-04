@@ -6,7 +6,7 @@ import * as store from '../data/store.js';
 import { state } from '../data/store.js';
 import { getWeather } from '../data/weather-service.js';
 import { backupDue, exportBackup } from '../data/backup.js';
-import { suggest, alternatives, assemble, comboKey } from '../core/generate.js';
+import { suggest, alternatives, assemble, comboKey, visibleTops } from '../core/generate.js';
 import { evaluate, MODES, itemIds, piecesOf, isProblem } from '../core/rules.js';
 import { describe, labelParts, toUnit } from '../core/weather.js';
 import { isoDate, isWeekend, weekModes, fancyNudge } from '../core/week.js';
@@ -17,7 +17,7 @@ import { pickHair, DEFAULT_STYLES } from '../core/hair.js';
 
 // Morning session: survives closing the app, resets the next day.
 let S = null;
-const fresh = (date) => ({ date, mode: null, skip: [], custom: null, weekend: false, changing: false, hairOffset: 0 });
+const fresh = (date) => ({ date, mode: null, skip: [], skipTops: [], custom: null, weekend: false, changing: false, hairOffset: 0 });
 
 let W = { status: 'idle', summary: null, place: null, error: null, date: null };
 
@@ -106,7 +106,13 @@ function picks(today) {
     stale = true;
   }
   const skip = new Set(S.skip);
-  return { picks: result.picks.filter((p) => !skip.has(p.combo)), pool: result.pool, stale };
+  const list = result.picks.filter((p) => !skip.has(p.combo));
+  // After "Another", lead with a different top: a new pair of trousers under
+  // the same sweater isn't a different outfit. Same-top variations follow.
+  const seenTops = new Set(S.skipTops || []);
+  const fresh = list.filter((p) => !visibleTops(p.outfit).some((i) => seenTops.has(i.id)));
+  const rest = list.filter((p) => !fresh.includes(p));
+  return { picks: [...fresh, ...rest], pool: result.pool, stale };
 }
 
 export async function renderToday(root, rerender) {
@@ -156,7 +162,7 @@ export async function renderToday(root, rerender) {
       Object.values(MODES).map((m) => h('button', {
         class: `mode-tile mode-${m.key}`,
         'aria-pressed': String(S.mode === m.key),
-        onclick: () => { if (S.mode !== m.key) { S.mode = m.key; S.custom = null; S.skip = []; S.hairOffset = 0; saveSession(); rerender(); } },
+        onclick: () => { if (S.mode !== m.key) { S.mode = m.key; S.custom = null; S.skip = []; S.skipTops = []; S.hairOffset = 0; saveSession(); rerender(); } },
       }, h('span', { class: 'mode-dot' }), h('b', null, m.label)))),
     nudge && h('div', { class: 'nudge' }, nudge),
   ));
@@ -309,7 +315,7 @@ function pickView(today, rerender, worn) {
         : inLaundry
           ? `${inLaundry} piece${inLaundry === 1 ? ' is' : 's are'} in the laundry, which leaves nothing that suits ${MODES[S.mode].label.toLowerCase()} and this weather.`
           : `Nothing in the closet suits ${MODES[S.mode].label.toLowerCase()} in this weather yet.`),
-      S.skip.length ? h('button', { class: 'btn ghost', onclick: () => { S.skip = []; saveSession(); rerender(); } }, 'Start over') : null,
+      S.skip.length ? h('button', { class: 'btn ghost', onclick: () => { S.skip = []; S.skipTops = []; saveSession(); rerender(); } }, 'Start over') : null,
     ));
     return wrap;
   }
@@ -376,6 +382,7 @@ function pickView(today, rerender, worn) {
     h('button', { class: 'btn ghost', onclick: async () => {
       if (!cur.custom) await store.learn(outfit, S.mode, 'skipped');
       S.skip.push(comboKey(outfit));
+      S.skipTops = [...new Set([...(S.skipTops || []), ...visibleTops(outfit).map((i) => i.id)])];
       S.custom = null;
       saveSession();
       rerender();
