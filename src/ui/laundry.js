@@ -7,6 +7,7 @@ import * as store from '../data/store.js';
 import { state } from '../data/store.js';
 import { isoDate } from '../core/week.js';
 import { washTub } from './glyphs.js';
+import * as valet from './mascot.js';
 
 export function renderLaundry(root) {
   const today = isoDate();
@@ -22,6 +23,9 @@ export function renderLaundry(root) {
       const undo = await store.setLaundry(ids, false);
       toast(`${ids.length} piece${ids.length === 1 ? '' : 's'} back in the closet`, { label: 'Undo', run: undo });
     } }, 'Laundry done') : null));
+
+  const m = valet.current();
+  if (m) root.append(valet.says([valet.laundryLine(m.voice)]));
 
   root.append(h('section', null,
     h('div', { class: 'label row', style: { marginBottom: '10px', gap: '6px' } }, washTub(), 'In the wash'),

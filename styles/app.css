@@ -1375,4 +1375,16 @@ button.stats::after { content: ""; position: absolute; top: 14px; right: 14px; w
 @media (prefers-reduced-motion: reduce) { .intro-valet { opacity: 1; } }
 
 /* Today's date is the longest large title ("Wednesday 25 November"); keep it on one line. */
-.today-head h1 { font-size: 30px; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.today-head h1 { font-size: clamp(22px, 7.2vw, 30px); letter-spacing: -0.005em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* the valet, alive: a blink now and then, a hop when it says something new */
+.valet-avatar .eyes { transform-box: fill-box; transform-origin: center; animation: blink 5.5s infinite; animation-delay: var(--blink-delay, 0s); }
+@keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+.valet-avatar.enter, .valet-avatar.hop { animation: hop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes hop { 0% { transform: translateY(0); } 35% { transform: translateY(-5px) rotate(-4deg); } 100% { transform: none; } }
+.valet.talks { cursor: pointer; -webkit-user-select: none; user-select: none; }
+.valet.talks:active .valet-bubble { transform: scale(0.98); }
+.valet-bubble { transition: transform 0.18s var(--spring); }
+.valet-more { font-weight: 400; color: var(--ink-3); opacity: 0.8; }
+.wxd-wrap > .valet { margin-bottom: 0; }
+@media (prefers-reduced-motion: reduce) { .valet-avatar .eyes { animation: none; } }

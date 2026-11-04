@@ -92,8 +92,11 @@ it off): **Barnaby** the fox (default), **Humphrey** the bulldog,
 **Reginald** the corgi or **Ashworth**, a gentleman's gentleman. Each has
 its own voice and says a line or two on Today: a greeting with the weather,
 then what kind of day it is, why it picked the outfit, or a sign-off once
-you've worn it. They also appear in the launch intro, at the weekend and on
-an empty closet. Portraits are in `src/mascot-art.js`, voices in
+you've worn it. They react when you skip, swap or save, mark weekday streaks,
+and give the fancy-day nudge. Tap them for more: today's weather, laundry
+that needs doing, a piece that hasn't been out in weeks, then a style tip.
+They also speak on Laundry, Closet, Leaders and the weather panel, appear in
+the launch intro, and blink now and then. Portraits are in `src/mascot-art.js`, voices in
 `src/ui/mascot.js`.
 
 ## Backups

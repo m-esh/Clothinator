@@ -392,3 +392,42 @@ test('if nothing else fits, the same top is allowed and says so', () => {
   assert.ok(picks.length >= 1);
   assert.ok(picks[0].notes.some((x) => /same top as last time/.test(x.text)));
 });
+
+test('valets react, comment on the weather, and mark streaks', async () => {
+  const { voice, weatherLine, reaction, streakLine, nudgeLine, MASCOT_KEYS } = await import('../src/ui/mascot.js');
+  const { fancyNudgeKind, weekdayStreak } = await import('../src/core/week.js');
+  for (const k of MASCOT_KEYS) {
+    const v = voice(k);
+    for (const f of ['swap', 'saved', 'streak', 'laundryPile', 'washHint', 'resting', 'leaderTop']) assert.ok(v[f], `${k} missing ${f}`);
+    assert.equal(v.skip.length, 3);
+    assert.ok(v.tips.length >= 3);
+    for (const n of ['none', 'one', 'fourth']) assert.ok(v.nudge[n], `${k} nudge ${n}`);
+    for (const w of ['rainAt', 'rain', 'windy', 'swing', 'dry']) assert.ok(v.weather[w], `${k} weather ${w}`);
+  }
+  const v = voice('fox');
+  assert.equal(weatherLine(v, rainy), v.weather.rain);
+  assert.equal(weatherLine(v, { ...rainy, wetFrom: 15 }), 'Umbrella from 3pm.');
+  assert.equal(weatherLine(v, { ...mild, windy: true }), v.weather.windy);
+  assert.equal(reaction(v, { type: 'skip', n: 2 }), v.skip[1]);
+  assert.equal(reaction(v, { type: 'skip', n: 4 }), v.skip[0], 'cycles through');
+  assert.equal(reaction(v, { type: 'swap' }), v.swap);
+  assert.equal(reaction(v, null), null);
+  assert.equal(streakLine(v, 5), '5 weekdays running. Very consistent.');
+  assert.equal(streakLine(v, 6), null, 'only on milestones');
+  assert.equal(nudgeLine(v, null), null);
+  // Mon–Fri all logged → a 5-weekday streak on Friday, still 5 over the weekend.
+  const week = ['02', '03', '04', '05', '06'].map((d) => ({ date: `2026-11-${d}`, mode: 'casual' }));
+  assert.equal(weekdayStreak(week, '2026-11-06'), 5);
+  assert.equal(weekdayStreak(week, '2026-11-08'), 5);
+  assert.equal(fancyNudgeKind([], '2026-11-04'), 'none');
+  assert.equal(fancyNudgeKind([], '2026-11-02'), null);
+});
+
+test('valet lines agree with plural clothes', async () => {
+  const { voice, fillAll } = await import('../src/ui/mascot.js');
+  const v = voice('corgi');
+  assert.equal(fillAll(v.resting, { item: 'denim jeans', n: 3 }), 'Your denim jeans haven\u2019t been out for 3 weeks. They miss you!');
+  assert.equal(fillAll(v.resting, { item: 'navy sweater', n: 3 }), 'Your navy sweater hasn\u2019t been out for 3 weeks. It misses you!');
+  assert.equal(fillAll(voice('fox').washHint, { item: 'brown boots', n: 4 }), 'Your brown boots have been out 4 times since their last wash.');
+  assert.equal(fillAll(voice('valet').washHint, { item: 'white oxford', n: 4 }), 'The white oxford has been worn 4 times since its last wash. Might I suggest the laundry?');
+});

@@ -3,6 +3,7 @@
 
 import { h, sheet } from './dom.js';
 import { toUnit, toWind, windUnit, toRain, rainUnit, compass, codeLabel, fmtHour } from '../core/weather.js';
+import * as valet from './mascot.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const el = (tag, attrs = {}, text) => {
@@ -141,7 +142,9 @@ export function openWeather({ day, summary, place, unit, from, to }) {
   if (hours.length < 2) return;
   const codes = hours.filter((p) => p.h >= from && p.h < to).map((p) => p.code);
   const worst = codes.reduce((a, c) => (c > a ? c : a), 0);
+  const m = valet.current();
   sheet(place ? `Weather · ${place}` : 'Weather', () => h('div', { class: 'wxd-wrap' },
+    m ? valet.says([valet.weatherLine(m.voice, summary)]) : null,
     h('div', { class: 'wxd-head' },
       h('b', null, `${toUnit(summary.feelsMin, unit)}° → ${toUnit(summary.feelsMax, unit)}°`),
       h('span', null, `${codeLabel(worst) || 'Feels like'} · ${fmtHour(from)}–${fmtHour(to)}`)),

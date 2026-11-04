@@ -33,6 +33,30 @@ export function weekModes(wears, today) {
   });
 }
 
+// Consecutive weekdays, ending today or the last weekday, with an outfit logged.
+export function weekdayStreak(wears, today) {
+  const days = new Set(wears.map((w) => w.date));
+  const d = parse(today);
+  if (!days.has(today)) d.setDate(d.getDate() - 1);
+  let n = 0;
+  for (let guard = 0; guard < 400; guard++) {
+    const iso = isoDate(d);
+    if (!isWeekend(iso)) {
+      if (!days.has(iso)) break;
+      n++;
+    }
+    d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
+
+// Which fancy-day nudge applies: 'none' | 'one' | 'fourth' | null.
+export function fancyNudgeKind(wears, today, chosen) {
+  const text = fancyNudge(wears, today, chosen);
+  if (!text) return null;
+  return /fourth/.test(text) ? 'fourth' : /^No fancy/.test(text) ? 'none' : 'one';
+}
+
 // You like 2–3 fancy weekdays. Returns a nudge string or null.
 export function fancyNudge(wears, today, chosen) {
   if (isWeekend(today)) return null;

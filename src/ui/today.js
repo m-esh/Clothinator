@@ -9,7 +9,7 @@ import { backupDue, exportBackup } from '../data/backup.js';
 import { suggest, alternatives, assemble, comboKey, visibleTops } from '../core/generate.js';
 import { evaluate, MODES, itemIds, piecesOf, isProblem } from '../core/rules.js';
 import { describe, labelParts, toUnit } from '../core/weather.js';
-import { isoDate, isWeekend, weekModes, fancyNudge } from '../core/week.js';
+import { isoDate, isWeekend, weekModes, fancyNudge, fancyNudgeKind, weekdayStreak } from '../core/week.js';
 import { stats } from '../core/catalog.js';
 import { openWeather } from './weather-sheet.js';
 import * as valet from './mascot.js';
@@ -162,9 +162,9 @@ export async function renderToday(root, rerender) {
       Object.values(MODES).map((m) => h('button', {
         class: `mode-tile mode-${m.key}`,
         'aria-pressed': String(S.mode === m.key),
-        onclick: () => { if (S.mode !== m.key) { S.mode = m.key; S.custom = null; S.skip = []; S.skipTops = []; S.hairOffset = 0; saveSession(); rerender(); } },
+        onclick: () => { if (S.mode !== m.key) { S.mode = m.key; S.custom = null; S.skip = []; S.skipTops = []; S.hairOffset = 0; S.reaction = null; saveSession(); rerender(); } },
       }, h('span', { class: 'mode-dot' }), h('b', null, m.label)))),
-    nudge && h('div', { class: 'nudge' }, nudge),
+    nudge && !valet.current() && h('div', { class: 'nudge' }, nudge),
   ));
 
   if (!S.mode) {
@@ -376,12 +376,14 @@ function pickView(today, rerender, worn) {
       const w = await store.logWear(ids, S.mode, { date: today, weather: W.summary, hair: todaysHair(today)?.id });
       S.changing = false;
       S.custom = null;
+      S.reaction = null;
       saveSession();
       toast('Logged as worn', { label: 'Undo', run: () => store.undoWear(w.id) });
     } }, 'Wear this'),
     h('button', { class: 'btn ghost', onclick: async () => {
       if (!cur.custom) await store.learn(outfit, S.mode, 'skipped');
       S.skip.push(comboKey(outfit));
+      S.reaction = { type: 'skip', n: S.skip.length };
       S.skipTops = [...new Set([...(S.skipTops || []), ...visibleTops(outfit).map((i) => i.id)])];
       S.custom = null;
       saveSession();
@@ -391,6 +393,7 @@ function pickView(today, rerender, worn) {
       if (saved) { await store.deleteOutfit(saved.id); toast('Removed from saved'); }
       else {
         const r = await store.saveOutfit(ids, { mode: S.mode });
+        if (!r.duplicate) { S.reaction = { type: 'saved' }; saveSession(); }
         toast(r.duplicate ? 'Already in your outfits' : 'Saved to outfits');
       }
     } }, saved ? 'Saved' : 'Save'),
@@ -399,7 +402,7 @@ function pickView(today, rerender, worn) {
   if (worn) {
     wrap.append(h('button', { class: 'link small', style: { marginTop: '8px' }, onclick: () => { S.changing = false; S.custom = null; saveSession(); rerender(); } }, 'Keep what I logged'));
   } else if (S.custom) {
-    wrap.append(h('button', { class: 'link small', style: { marginTop: '8px' }, onclick: () => { S.custom = null; saveSession(); rerender(); } }, 'Back to my pick'));
+    wrap.append(h('button', { class: 'link small', style: { marginTop: '8px' }, onclick: () => { S.custom = null; S.reaction = null; saveSession(); rerender(); } }, 'Back to my pick'));
   }
   return wrap;
 }
@@ -429,14 +432,18 @@ function valetLine(today) {
   if (!m) return null;
   const v = m.voice;
   const first = valet.greeting(v, W.summary);
-  if (!S.mode) return valet.says([first, v.ask]);
+  const more = valet.remarks(v, { weather: W.summary, today });
+  if (!S.mode) return valet.says([first, valet.nudgeLine(v, fancyNudgeKind(state.wears, today, null)) || v.ask], { more });
   const worn = store.wearsOn(today).at(-1);
-  if (worn && !S.changing) return valet.says([first, v.worn]);
+  if (worn && !S.changing) return valet.says([first, v.worn, valet.streakLine(v, weekdayStreak(state.wears, today))], { more });
   const cur = currentOutfit(today);
-  if (cur.loading || !cur.outfit) return valet.says([first]);
+  if (cur.loading || !cur.outfit) return valet.says([first], { more });
+  // A reaction to what you just did replaces the greeting.
+  const opener = valet.reaction(v, S.reaction) || first;
   const ev = evaluate(cur.outfit, ctxFor());
-  if (!cur.custom && ev.notes.filter(isProblem).length >= 2) return valet.says([first, v.struggle]);
-  return valet.says([first, valet.reasonLine(v, cur.custom ? ev.notes : (cur.notes || ev.notes), S.mode)]);
+  if (!cur.custom && ev.notes.filter(isProblem).length >= 2) return valet.says([opener, v.struggle], { more });
+  const fourth = S.mode === 'fancy' && fancyNudgeKind(state.wears, today, 'fancy') === 'fourth' ? valet.nudgeLine(v, 'fourth') : null;
+  return valet.says([opener, fourth || valet.reasonLine(v, cur.custom ? ev.notes : (cur.notes || ev.notes), S.mode)], { more });
 }
 
 // Today's hairstyle, when hair is switched on in Settings.
@@ -477,6 +484,7 @@ function applySwap(before, after, rerender) {
   store.learn(before, S.mode, 'swappedOut');
   store.learn(after, S.mode, 'swappedIn');
   S.custom = itemIds(after);
+  S.reaction = { type: 'swap' };
   saveSession();
   rerender();
 }

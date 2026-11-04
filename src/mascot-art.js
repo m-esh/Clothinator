@@ -17,8 +17,8 @@ window.CLAD_MASCOTS = {
       <path d="M26 30 L38.5 40.5 L31 47 Z M94 30 L81.5 40.5 L89 47 Z" fill="#3b2418"/>
       <path d="M60 87 C50 87 38.5 79.5 34 65 C42.5 66.5 50.5 70.5 60 75 C69.5 70.5 77.5 66.5 86 65 C81.5 79.5 70 87 60 87 Z" fill="#f5eee4"/>
       <ellipse cx="60" cy="75" rx="4.6" ry="3.3" fill="#1c1c1e"/>
-      <ellipse cx="47" cy="56" rx="3" ry="3.6" fill="#1c1c1e"/><ellipse cx="73" cy="56" rx="3" ry="3.6" fill="#1c1c1e"/>
-      <circle cx="48" cy="54.8" r="0.9" fill="#fff"/><circle cx="74" cy="54.8" r="0.9" fill="#fff"/>
+      <g class="eyes"><ellipse cx="47" cy="56" rx="3" ry="3.6" fill="#1c1c1e"/><ellipse cx="73" cy="56" rx="3" ry="3.6" fill="#1c1c1e"/>
+      <circle cx="48" cy="54.8" r="0.9" fill="#fff"/><circle cx="74" cy="54.8" r="0.9" fill="#fff"/></g>
       <path d="M41 49.5 Q47 46.5 52 49 M68 49 Q73 46.5 79 49.5" stroke="#8a4318" stroke-width="2" fill="none" stroke-linecap="round"/>
       <path d="M56 80 Q60 82.5 64 80" stroke="#1c1c1e" stroke-width="1.6" fill="none" stroke-linecap="round"/>
     </svg>`,
@@ -42,8 +42,8 @@ window.CLAD_MASCOTS = {
       <path d="M60 66.5 L60 70 M60 70 C52 70 44 73 40 79 M60 70 C68 70 76 73 80 79" stroke="#7d5c40" stroke-width="2" fill="none" stroke-linecap="round"/>
       <path d="M44 81 C50 85 70 85 76 81 C72 87 48 87 44 81 Z" fill="#8a3d3d"/>
       <path d="M46.5 82 L48.5 76.5 L50.5 82.6 Z M73.5 82 L71.5 76.5 L69.5 82.6 Z" fill="#fff"/>
-      <circle cx="45" cy="51.5" r="3" fill="#1c1c1e"/><circle cx="75" cy="51.5" r="3" fill="#1c1c1e"/>
-      <circle cx="45.9" cy="50.6" r="0.8" fill="#fff"/><circle cx="75.9" cy="50.6" r="0.8" fill="#fff"/>
+      <g class="eyes"><circle cx="45" cy="51.5" r="3" fill="#1c1c1e"/><circle cx="75" cy="51.5" r="3" fill="#1c1c1e"/>
+      <circle cx="45.9" cy="50.6" r="0.8" fill="#fff"/><circle cx="75.9" cy="50.6" r="0.8" fill="#fff"/></g>
       <path d="M39 46 L51 48 M81 46 L69 48" stroke="#5a3f2a" stroke-width="2.4" stroke-linecap="round"/>
     </svg>`,
   },
@@ -65,8 +65,8 @@ window.CLAD_MASCOTS = {
       <path d="M44 35 L76 35 M42 39 L78 39" stroke="#665643" stroke-width="1"/>
       <ellipse cx="60" cy="70" rx="4.6" ry="3.3" fill="#1c1c1e"/>
       <path d="M53.5 76 Q60 81.5 66.5 76" stroke="#1c1c1e" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-      <circle cx="46" cy="58" r="3.3" fill="#1c1c1e"/><circle cx="74" cy="58" r="3.3" fill="#1c1c1e"/>
-      <circle cx="47.1" cy="56.8" r="1" fill="#fff"/><circle cx="75.1" cy="56.8" r="1" fill="#fff"/>
+      <g class="eyes"><circle cx="46" cy="58" r="3.3" fill="#1c1c1e"/><circle cx="74" cy="58" r="3.3" fill="#1c1c1e"/>
+      <circle cx="47.1" cy="56.8" r="1" fill="#fff"/><circle cx="75.1" cy="56.8" r="1" fill="#fff"/></g>
     </svg>`,
   },
   valet: {
@@ -86,8 +86,8 @@ window.CLAD_MASCOTS = {
       <path d="M38.5 55 C36.5 36 48 28 62 29.5 C76 30 84.5 40 81.5 55 C79.5 46 73.5 40.5 65 38.5 L55 40.5 C47.5 41.5 41.5 46.5 38.5 55 Z" fill="#2c2420"/>
       <path d="M55 40.5 C58 36 63 34 68 33.5" stroke="#4a3d36" stroke-width="1.2" fill="none" stroke-linecap="round"/>
       <path d="M47.5 51 Q52.5 49 56.5 50.5 M63.5 50.5 Q67.5 49 72.5 51" stroke="#2c2420" stroke-width="1.9" fill="none" stroke-linecap="round"/>
-      <ellipse cx="52" cy="56.5" rx="2.4" ry="2.8" fill="#2c2420"/><ellipse cx="68" cy="56.5" rx="2.4" ry="2.8" fill="#2c2420"/>
-      <circle cx="52.8" cy="55.6" r="0.8" fill="#fff"/><circle cx="68.8" cy="55.6" r="0.8" fill="#fff"/>
+      <g class="eyes"><ellipse cx="52" cy="56.5" rx="2.4" ry="2.8" fill="#2c2420"/><ellipse cx="68" cy="56.5" rx="2.4" ry="2.8" fill="#2c2420"/>
+      <circle cx="52.8" cy="55.6" r="0.8" fill="#fff"/><circle cx="68.8" cy="55.6" r="0.8" fill="#fff"/></g>
       <path d="M58.5 58 Q57.5 64 59 66 Q60.5 66.8 62 66" stroke="#b9876a" stroke-width="1.4" fill="none" stroke-linecap="round"/>
       <path d="M60 69 C56 68 52 69 49.5 72 C53 71.5 56.5 71.5 60 70.5 C63.5 71.5 67 71.5 70.5 72 C68 69 64 68 60 69 Z" fill="#2c2420"/>
       <path d="M55.5 75.5 Q60 78 64.5 75.5" stroke="#a0644c" stroke-width="1.6" fill="none" stroke-linecap="round"/>

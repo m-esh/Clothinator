@@ -34,6 +34,9 @@ export function renderCloset(root, rerender) {
   }
 
   const counts = Object.fromEntries(CATEGORIES.map((c) => [c.key, items.filter((i) => stats(i).cat === c.key).length]));
+  const m = valet.current();
+  if (m && items.length >= 6) root.append(valet.says([valet.restingLine(m.voice, isoDate())]));
+
   root.append(h('div', { class: 'filter-row' }, h('div', { class: 'chips' },
     h('button', { class: 'chip', 'aria-pressed': String(filter === 'all'), onclick: () => { filter = 'all'; rerender(); } }, 'All'),
     CATEGORIES.filter((c) => counts[c.key]).map((c) => h('button', {

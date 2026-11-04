@@ -9,11 +9,14 @@ import { COLOR } from '../core/color.js';
 import { MODES } from '../core/rules.js';
 import { isoDate, isWeekend } from '../core/week.js';
 import { DEFAULT_STYLES } from '../core/hair.js';
+import * as valet from './mascot.js';
 
 const DAY = 86400000;
 
 export function renderLeaderboard(root) {
   root.append(h('div', { class: 'page-head' }, h('h1', null, 'Leaderboard')));
+  const m = valet.current();
+  if (m) root.append(valet.says([valet.leaderLine(m.voice)]));
   const today = isoDate();
   const wears = state.wears;
   const worn = state.items.filter((i) => (i.wears || 0) > 0).sort((a, b) => b.wears - a.wears || (b.lastWorn || '').localeCompare(a.lastWorn || ''));
