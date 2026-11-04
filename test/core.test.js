@@ -348,3 +348,47 @@ test('every valet has a line for every situation, and reasons map to them', asyn
   assert.equal(reasonLine(v, n('properly sharp'), 'fancy'), v.reason.fancy);
   assert.equal(reasonLine(v, [{ tone: 'warn', text: 'two patterns competing' }], 'casual'), null);
 });
+
+test('skipping through a mood never leaves it', async () => {
+  const { fitsMode } = await import('../src/core/generate.js');
+  for (const mode of ['fancy', 'casual', 'comfy']) {
+    const { picks } = run({ mode, weather: mild });
+    assert.ok(picks.length > 0, mode);
+    for (const p of picks) assert.ok(fitsMode(p.outfit, mode), `${mode}: ${formalityOf(p.outfit).toFixed(2)} ${p.key}`);
+  }
+  const fancy = run({ mode: 'fancy', weather: mild }).picks.map((p) => formalityOf(p.outfit));
+  assert.ok(Math.min(...fancy) >= 3.0, 'every fancy suggestion, all the way down the list, is fancy');
+});
+
+test('a saved outfit only appears in the mood it was saved under', () => {
+  const items = closet();
+  const ids = [byType(items, 'oxford', 'white').id, byType(items, 'sweater', 'cream').id, byType(items, 'trousers').id, byType(items, 'dress-shoes').id];
+  const saved = [{ id: 's-casual', itemIds: ids, mode: 'casual' }];
+  assert.ok(!run({ items, saved, mode: 'fancy' }).picks.some((p) => p.savedId === 's-casual'));
+});
+
+test('the top you are seen in changes from your last outfit; trousers may repeat', () => {
+  const items = closet();
+  // Last time (Friday, so Monday looks back over the weekend):
+  // navy sweater over a shirt, with navy chinos.
+  const sweater = byType(items, 'sweater', 'navy'), chinos = byType(items, 'chinos', 'navy');
+  const wears = [{ date: '2026-10-30', at: 1, itemIds: [byType(items, 'tshirt', 'white').id, sweater.id, chinos.id, byType(items, 'boots').id], combo: 'x', mode: 'fancy' }];
+  for (const mode of ['fancy', 'casual']) {
+    const { picks } = run({ items, wears, mode, weather: mild, today: '2026-11-02' });
+    for (const p of picks) assert.ok(p.outfit.mid?.id !== sweater.id, `${mode}: navy sweater again in ${p.key}`);
+  }
+  // The user's case: same blue top and blue trousers, now with a white dress
+  // shirt under it, is not offered.
+  const fancy = run({ items, wears, mode: 'fancy', weather: mild, today: '2026-11-02' }).picks;
+  assert.ok(!fancy.some((p) => p.outfit.mid?.id === sweater.id && p.outfit.base?.type === 'dress-shirt'));
+});
+
+test('if nothing else fits, the same top is allowed and says so', () => {
+  let n = 0;
+  const it = (type, c) => ({ id: `${type}-${n++}`, type, name: `${c} ${type}`, colors: [{ name: c, share: 0.9 }] });
+  const items = [it('oxford', 'white'), it('trousers', 'charcoal'), it('dress-shoes', 'black')];
+  const wears = [{ date: '2026-11-02', at: 1, itemIds: items.map((i) => i.id), combo: 'y', mode: 'fancy' }];
+  const { picks } = run({ items, wears, mode: 'fancy', weather: mild, today: '2026-11-03' });
+  assert.ok(picks.length >= 1);
+  assert.ok(picks[0].notes.some((x) => /same top as last time/.test(x.text)));
+});

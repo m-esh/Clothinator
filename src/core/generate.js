@@ -2,7 +2,7 @@
 // is passed in, so it runs the same in the app and in tests.
 
 import { stats } from './catalog.js';
-import { evaluate, MODES, piecesOf, baseShows } from './rules.js';
+import { evaluate, MODES, piecesOf, baseShows, formalityOf } from './rules.js';
 import { tasteScore } from './taste.js';
 
 // ── small utilities ─────────────────────────────────────────
@@ -40,6 +40,23 @@ export function comboKey(outfit) {
 // most of a working week, so one top doesn't reappear under every sweater.
 const REST = [1.2, 0.8, 0.55, 0.35, 0.2, 0.1, 0.1];
 const REST_LIGHT = [0.3, 0.15, 0.1]; // shoes and jackets repeat more
+const REST_BOTTOM = [1.0, 0.3, 0.2, 0.1]; // trousers may repeat; a fresh pair is still preferred
+
+// What a mood allows, on the 0 (gym) … 5 (black tie) dressiness scale.
+// Skipping through suggestions never leaves the mood you picked.
+const MODE_BAND = { fancy: [3.0, 5], casual: [1.5, 3.4], comfy: [0, 2.2] };
+export function fitsMode(outfit, mode) {
+  const band = MODE_BAND[mode];
+  if (!band) return true;
+  const f = formalityOf(outfit);
+  return f >= band[0] && f <= band[1];
+}
+
+// The tops people actually see: the sweater, a shirt that isn't hidden
+// under one, a dress. Jackets come off, so they don't count.
+export function visibleTops(outfit) {
+  return [outfit.mid, baseShows(outfit) === 'hidden' ? null : outfit.base, outfit.onepiece].filter(Boolean);
+}
 
 export function fullKey(outfit) {
   return piecesOf(outfit).map((i) => i.id).sort().join('+');
@@ -51,16 +68,30 @@ export function fullKey(outfit) {
 export function historyIndex(wears) {
   const combo = new Map();
   const item = new Map();
+  const byDay = new Map(); // date → item ids (the day's last log)
   for (const w of wears) {
     if (w.combo && (!combo.has(w.combo) || combo.get(w.combo) < w.date)) combo.set(w.combo, w.date);
     for (const id of w.itemIds) if (!item.has(id) || item.get(id) < w.date) item.set(id, w.date);
+    const prev = byDay.get(w.date);
+    if (!prev || (w.at || 0) >= prev.at) byDay.set(w.date, { at: w.at || 0, itemIds: w.itemIds });
   }
-  return { combo, item };
+  return { combo, item, byDay };
 }
 
-function varietyScore(outfit, hist, today) {
+// The visible tops of your last two outfits (the last days you logged one,
+// so Monday looks back to Friday).
+function recentTops(hist, today, byId) {
+  return [...hist.byDay.keys()].filter((d) => d < today).sort().reverse().slice(0, 2)
+    .map((d) => new Set(visibleTops(assemble(hist.byDay.get(d).itemIds.map((id) => byId.get(id)).filter(Boolean))).map((i) => i.id)));
+}
+
+function varietyScore(outfit, hist, today, recent = []) {
   let s = 0;
   let note = null;
+  // The top you're seen in should change from last time; trousers may stay.
+  const tops = visibleTops(outfit).map((i) => i.id);
+  const sameTop = !!recent[0] && tops.some((id) => recent[0].has(id));
+  if (recent[1] && tops.some((id) => recent[1].has(id))) s -= 1.2;
   const last = hist.combo.get(comboKey(outfit));
   if (last) {
     const d = daysBetween(last, today);
@@ -75,14 +106,14 @@ function varietyScore(outfit, hist, today) {
     // undershirts don't: you'd own several.
     if (st.cat === 'accessory' || st.under) continue;
     const li = hist.item.get(i.id);
-    const table = st.cat === 'shoes' || st.cat === 'outer' ? REST_LIGHT : REST;
+    const table = st.cat === 'shoes' || st.cat === 'outer' ? REST_LIGHT : st.cat === 'bottom' ? REST_BOTTOM : REST;
     if (li) {
       const d = Math.max(0, daysBetween(li, today));
       if (d < table.length) s -= table[d];
       else if (d >= 21) s += 0.1;
     } else s += 0.1;
   }
-  return { s, note };
+  return { s, note, sameTop };
 }
 
 // ── accessories ─────────────────────────────────────────────
@@ -235,13 +266,16 @@ export function suggest(o) {
 
   const scored = [];
   const seen = new Set();
-  const consider = (outfit, bonus = 0, savedId) => {
+  const recent = recentTops(hist, o.today, byId);
+  const consider = (outfit, bonus = 0, savedId, savedMode) => {
+    // Stay inside the mood. An outfit you saved under this mood always counts.
+    if (savedMode ? savedMode !== o.mode : !fitsMode(outfit, o.mode)) return;
     const combo = comboKey(outfit);
     if (skip.has(combo)) return;
     const key = fullKey(outfit);
     if (seen.has(key)) return;
     seen.add(key);
-    const v = varietyScore(outfit, hist, o.today);
+    const v = varietyScore(outfit, hist, o.today, recent);
     const fav = piecesOf(outfit).filter((i) => favs.has(i.id)).length * 0.25;
     const t = total(outfit, ctx, v.s + bonus + fav);
     if (t.score === -Infinity) return;
@@ -252,11 +286,16 @@ export function suggest(o) {
     const pieces = s.itemIds.map((id) => byId.get(id));
     if (pieces.some((p) => !p || p.inLaundry || p.blocked)) continue;
     const fit = assemble(pieces);
-    consider(fit, 0.8, s.id);
+    consider(fit, 0.8, s.id, s.mode);
     // Your outfit, plus whichever jacket today's weather wants.
-    if (!fit.outer) for (const o of by.outer) consider({ ...fit, outer: o }, 0.8, s.id);
+    if (!fit.outer) for (const j of by.outer) consider({ ...fit, outer: j }, 0.8, s.id, s.mode);
   }
   for (const c of candidates(by)) consider(c);
+
+  // Never the same visible top as last time, unless nothing else fits.
+  const freshTop = scored.filter((x) => !x.variety.sameTop);
+  if (freshTop.length) scored.splice(0, scored.length, ...freshTop);
+  else for (const x of scored) x.variety.note = 'same top as last time: nothing else fits today';
 
   scored.sort((a, b) => b.score - a.score);
   const pool = new Set(scored.filter((s) => s.rules > -1.5).map((s) => s.combo)).size;

@@ -52,9 +52,12 @@ garment knowledge base, and **Fine-tune** lets you override it per item.
    sweater on its own comes with "wear a T-shirt or undershirt under it".
 4. **Your taste**: a small model on the phone learns from every wear, skip,
    swap and save.
-5. **Variety**: the same visible top + bottom is held back for about two
-   weeks, and single pieces rest for most of a working week. Shoes and jackets are
-   allowed to repeat.
+5. **Variety**: the top you're seen in always changes from your last outfit
+   (trousers may stay, though a fresh pair is preferred); the same visible
+   top + bottom is held back for about two weeks; single pieces rest for most
+   of a working week. Shoes and jackets are allowed to repeat.
+6. **Moods stay put**: every suggestion for Fancy, Casual or Comfy is that
+   dressy, however many times you tap Another.
 
 Each suggestion lists its reasons, and warnings show in red. Tap any piece to
 swap it.
