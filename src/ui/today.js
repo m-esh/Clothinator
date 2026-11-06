@@ -12,12 +12,13 @@ import { describe, labelParts, toUnit } from '../core/weather.js';
 import { isoDate, isWeekend, weekModes, fancyNudge, fancyNudgeKind, weekdayStreak } from '../core/week.js';
 import { stats } from '../core/catalog.js';
 import { openWeather } from './weather-sheet.js';
+import { openDay } from './history.js';
 import * as valet from './mascot.js';
 import { pickHair, DEFAULT_STYLES } from '../core/hair.js';
 
 // Morning session: survives closing the app, resets the next day.
 let S = null;
-const fresh = (date) => ({ date, mode: null, skip: [], skipTops: [], custom: null, weekend: false, changing: false, hairOffset: 0 });
+const fresh = (date) => ({ date, mode: null, trail: [], pos: 0, looks: {}, custom: null, weekend: false, changing: false, hairOffset: 0 });
 
 let W = { status: 'idle', summary: null, place: null, error: null, date: null };
 
@@ -105,14 +106,57 @@ function picks(today) {
     if (!result) return null;
     stale = true;
   }
-  const skip = new Set(S.skip);
-  const list = result.picks.filter((p) => !skip.has(p.combo));
-  // After "Another", lead with a different top: a new pair of trousers under
-  // the same sweater isn't a different outfit. Same-top variations follow.
-  const seenTops = new Set(S.skipTops || []);
-  const fresh = list.filter((p) => !visibleTops(p.outfit).some((i) => seenTops.has(i.id)));
-  const rest = list.filter((p) => !fresh.includes(p));
-  return { picks: [...fresh, ...rest], pool: result.pool, stale };
+  return { picks: result.picks, pool: result.pool, stale };
+}
+
+// ── browsing outfits: back and forward ─────────────────────
+// S.trail is the outfits you've looked at this morning, in order; S.pos is
+// where you are in it. Forward revisits, then fetches a new one; back goes
+// to ones you passed.
+
+function syncTrail(list) {
+  const valid = new Set(list.map((p) => p.combo));
+  S.trail = (S.trail || []).filter((c) => valid.has(c)); // drop ones that no longer fit (laundry...)
+  if (!S.trail.length && list.length) { S.trail = [list[0].combo]; S.pos = 0; }
+  S.pos = Math.min(Math.max(0, S.pos || 0), Math.max(0, S.trail.length - 1));
+}
+
+// The next outfit you haven't seen, leading with a top you haven't seen
+// either: new trousers under the same sweater isn't a different outfit.
+function nextUnseen(list) {
+  const shown = new Set(S.trail);
+  const tops = new Set(S.trail.flatMap((c) => {
+    const p = list.find((x) => x.combo === c);
+    return p ? visibleTops(p.outfit).map((i) => i.id) : [];
+  }));
+  const rest = list.filter((p) => !shown.has(p.combo));
+  return rest.find((p) => !visibleTops(p.outfit).some((i) => tops.has(i.id))) || rest[0] || null;
+}
+
+async function browse(dir, today, rerender) {
+  const ready = picks(today);
+  if (!ready) return;
+  const list = ready.picks;
+  syncTrail(list);
+  if (dir < 0) {
+    if (S.pos <= 0) return;
+    S.pos--;
+    S.reaction = { type: 'back' };
+  } else {
+    if (S.pos < S.trail.length - 1) S.pos++;
+    else {
+      const leaving = list.find((p) => p.combo === S.trail[S.pos]);
+      const next = nextUnseen(list);
+      if (!next) return;
+      if (leaving && !S.custom) await store.learn(leaving.outfit, S.mode, 'skipped');
+      S.trail.push(next.combo);
+      S.pos = S.trail.length - 1;
+    }
+    S.reaction = { type: 'skip', n: S.pos };
+  }
+  S.custom = null;
+  saveSession();
+  rerender();
 }
 
 export async function renderToday(root, rerender) {
@@ -162,7 +206,7 @@ export async function renderToday(root, rerender) {
       Object.values(MODES).map((m) => h('button', {
         class: `mode-tile mode-${m.key}`,
         'aria-pressed': String(S.mode === m.key),
-        onclick: () => { if (S.mode !== m.key) { S.mode = m.key; S.custom = null; S.skip = []; S.skipTops = []; S.hairOffset = 0; S.reaction = null; saveSession(); rerender(); } },
+        onclick: () => { if (S.mode !== m.key) { S.mode = m.key; S.custom = null; S.trail = []; S.pos = 0; S.looks = {}; S.hairOffset = 0; S.reaction = null; saveSession(); rerender(); } },
       }, h('span', { class: 'mode-dot' }), h('b', null, m.label)))),
     nudge && !valet.current() && h('div', { class: 'nudge' }, nudge),
   ));
@@ -211,8 +255,13 @@ function header(today, rerender) {
     }, h('span', { class: 'wx-more', 'aria-hidden': 'true' }, '›'), wxChart(W.summary, state.prefs.unit), weather) : weather,
     isWeekend(today) ? null : h('div', { class: 'week', 'aria-label': 'This week' },
       week.map((d, i) => h('div', {
-        class: [d.mode, d.date === today ? 'today' : ''].filter(Boolean).join(' '),
+        class: [d.mode, d.date === today ? 'today' : '', d.mode ? 'logged' : ''].filter(Boolean).join(' '),
         title: d.mode ? MODES[d.mode].label : '',
+        ...(d.mode ? {
+          role: 'button', tabindex: '0', 'aria-label': `What you wore ${longDate(d.date)}`,
+          onclick: () => openDay(d.date),
+          onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDay(d.date); } },
+        } : {}),
       }, h('b', null, ['M', 'T', 'W', 'T', 'F'][i]), h('i', { class: 'dot' })))),
   );
 }
@@ -292,7 +341,19 @@ function currentOutfit(today) {
   const ready = picks(today);
   if (!ready) return { loading: true };
   const { picks: list, pool } = ready;
-  return list.length ? { outfit: list[0].outfit, notes: list[0].notes, pool, savedId: list[0].savedId } : { outfit: null, pool };
+  if (!list.length) return { outfit: null, pool };
+  syncTrail(list);
+  const p = list.find((x) => x.combo === S.trail[S.pos]) || list[0];
+  const nav = { pos: S.pos, seen: S.trail.length, total: list.length, hasPrev: S.pos > 0, hasNext: S.pos < S.trail.length - 1 || !!nextUnseen(list) };
+  // Going back shows exactly what you saw, even if what you've skipped since
+  // would now pick different shoes for it.
+  S.looks ||= {};
+  const was = S.looks[p.combo]?.map(store.itemById);
+  if (was && was.every((i) => i && !i.inLaundry) && was.map((i) => i.id).sort().join() !== itemIds(p.outfit).sort().join()) {
+    return { outfit: assemble(was), pinned: true, pool, savedId: p.savedId, nav };
+  }
+  if (!S.looks[p.combo]) { S.looks[p.combo] = itemIds(p.outfit); saveSession(); }
+  return { outfit: p.outfit, notes: p.notes, pool, savedId: p.savedId, nav };
 }
 
 function pickView(today, rerender, worn) {
@@ -309,13 +370,10 @@ function pickView(today, rerender, worn) {
   if (!cur.outfit) {
     const inLaundry = state.items.filter((i) => i.inLaundry).length;
     wrap.append(h('div', { class: 'empty' },
-      h('h2', null, S.skip.length ? 'That\'s everything' : 'Nothing works today'),
-      h('p', null, S.skip.length
-        ? 'You\'ve skipped every look I can make for this. Start over, or try another mode.'
-        : inLaundry
-          ? `${inLaundry} piece${inLaundry === 1 ? ' is' : 's are'} in the laundry, which leaves nothing that suits ${MODES[S.mode].label.toLowerCase()} and this weather.`
-          : `Nothing in the closet suits ${MODES[S.mode].label.toLowerCase()} in this weather yet.`),
-      S.skip.length ? h('button', { class: 'btn ghost', onclick: () => { S.skip = []; S.skipTops = []; saveSession(); rerender(); } }, 'Start over') : null,
+      h('h2', null, 'Nothing works today'),
+      h('p', null, inLaundry
+        ? `${inLaundry} piece${inLaundry === 1 ? ' is' : 's are'} in the laundry, which leaves nothing that suits ${MODES[S.mode].label.toLowerCase()} and this weather.`
+        : `Nothing in the closet suits ${MODES[S.mode].label.toLowerCase()} in this weather yet.`),
     ));
     return wrap;
   }
@@ -332,7 +390,7 @@ function pickView(today, rerender, worn) {
       problems >= 2 && !valet.current() ? h('b', null, 'Best I can do with your closet right now.') : null,
       gaps.length ? h('div', { class: problems >= 2 ? 'muted' : '' }, `Adding ${listJoin(gaps)} would give better picks.`) : null));
   }
-  const notes = cur.custom ? ev.notes : cur.notes;
+  const notes = cur.custom ? ev.notes : cur.pinned ? ev.notes.filter((n) => n.tone !== 'bad') : cur.notes;
   const flagged = new Set();
   if (ev.veto || ev.notes.some(isProblem)) {
     // Mark the pieces named in a warning, where we can tell.
@@ -371,7 +429,9 @@ function pickView(today, rerender, worn) {
 
   const ids = itemIds(outfit);
   const saved = store.findSaved(ids);
-  wrap.append(h('div', { class: 'actions' },
+  const nav = cur.nav;
+  wrap.append(h('div', { class: 'actions browse' },
+    h('button', { class: 'btn ghost nav-btn', 'aria-label': 'Previous outfit', disabled: !nav?.hasPrev, onclick: () => browse(-1, today, rerender) }, h('span', { class: 'chev left' })),
     h('button', { class: 'btn', onclick: async () => {
       const w = await store.logWear(ids, S.mode, { date: today, weather: W.summary, hair: todaysHair(today)?.id });
       S.changing = false;
@@ -380,15 +440,7 @@ function pickView(today, rerender, worn) {
       saveSession();
       toast('Logged as worn', { label: 'Undo', run: () => store.undoWear(w.id) });
     } }, 'Wear this'),
-    h('button', { class: 'btn ghost', onclick: async () => {
-      if (!cur.custom) await store.learn(outfit, S.mode, 'skipped');
-      S.skip.push(comboKey(outfit));
-      S.reaction = { type: 'skip', n: S.skip.length };
-      S.skipTops = [...new Set([...(S.skipTops || []), ...visibleTops(outfit).map((i) => i.id)])];
-      S.custom = null;
-      saveSession();
-      rerender();
-    } }, 'Another'),
+    h('button', { class: 'btn ghost nav-btn', 'aria-label': 'Next outfit', disabled: !nav?.hasNext && !cur.custom, onclick: () => browse(1, today, rerender) }, h('span', { class: 'chev right' })),
     h('button', { class: 'btn ghost', 'aria-pressed': String(!!saved), onclick: async () => {
       if (saved) { await store.deleteOutfit(saved.id); toast('Removed from saved'); }
       else {
@@ -398,6 +450,11 @@ function pickView(today, rerender, worn) {
       }
     } }, saved ? 'Saved' : 'Save'),
   ));
+  if (nav && !cur.custom) {
+    wrap.append(h('div', { class: 'nav-count tiny' }, nav.hasNext || nav.seen > 1
+      ? `Option ${nav.pos + 1}${nav.hasNext ? '' : ' · that\'s everything'}`
+      : 'The only option today'));
+  }
   // One way back, never two.
   if (worn) {
     wrap.append(h('button', { class: 'link small', style: { marginTop: '8px' }, onclick: () => { S.changing = false; S.custom = null; saveSession(); rerender(); } }, 'Keep what I logged'));

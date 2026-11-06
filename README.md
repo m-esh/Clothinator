@@ -57,7 +57,13 @@ garment knowledge base, and **Fine-tune** lets you override it per item.
    top + bottom is held back for about two weeks; single pieces rest for most
    of a working week. Shoes and jackets are allowed to repeat.
 6. **Moods stay put**: every suggestion for Fancy, Casual or Comfy is that
-   dressy, however many times you tap Another.
+   dressy, however far you browse.
+
+**‹ and ›** move through the morning's options: › brings a new one (with a
+different top where it can), ‹ goes back to ones you passed, exactly as you
+saw them, so you can change your mind. Tap a logged day in the week strip to
+see what you wore, with the mood, weather and hair, and step through every
+day you've logged.
 
 Each suggestion lists its reasons, and warnings show in red. Tap any piece to
 swap it.

@@ -1388,3 +1388,26 @@ button.stats::after { content: ""; position: absolute; top: 14px; right: 14px; w
 .valet-more { font-weight: 400; color: var(--ink-3); opacity: 0.8; }
 .wxd-wrap > .valet { margin-bottom: 0; }
 @media (prefers-reduced-motion: reduce) { .valet-avatar .eyes { animation: none; } }
+
+/* browsing outfits: back · Wear this · forward · Save */
+.actions.browse { grid-template-columns: 50px 1fr 50px auto; }
+.nav-btn { padding: 0; }
+.nav-btn[disabled] { opacity: 0.3; }
+.chev { width: 11px; height: 11px; border-left: 2.5px solid currentColor; border-bottom: 2.5px solid currentColor; border-radius: 1px; display: block; }
+.chev.left { transform: translateX(2px) rotate(45deg); }
+.chev.right { transform: translateX(-2px) rotate(-135deg); }
+.nav-count { text-align: center; color: var(--ink-3); margin-top: 8px; font-variant-numeric: tabular-nums; }
+
+/* history: tap a logged day in the week strip */
+.week div.logged { cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.15s; }
+.week div.logged:active { transform: scale(0.94); }
+.hist-nav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; margin-bottom: 16px; }
+.hist-nav .nav-btn { height: 44px; }
+.hist-date { text-align: center; display: grid; gap: 2px; }
+.hist-date b { font-size: 17px; font-weight: 600; }
+.hist-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.chip-mode { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid currentColor; }
+.chip-mode.fancy { color: var(--fancy); }
+.chip-mode.casual { color: var(--casual); }
+.chip-mode.comfy { color: var(--comfy, var(--ink-2)); }
+.hist-count { text-align: center; margin-top: 14px; }
