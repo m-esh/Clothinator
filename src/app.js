@@ -41,8 +41,8 @@ const TABS = [
   ['closet', 'Closet', ['closet', 'item', 'add', 'edit']],
   ['outfits', 'Outfits', ['outfits', 'build']],
   ['laundry', 'Laundry', ['laundry']],
-  ['settings', 'Settings', ['settings']],
   ['leaderboard', 'Leaders', ['leaderboard']],
+  ['settings', 'Settings', ['settings']],
 ];
 
 const route = () => {

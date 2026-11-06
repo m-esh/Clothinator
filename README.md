@@ -85,7 +85,7 @@ are never suggested.
   to set times worn, wears since washing and the last-worn date.
 - **Laundry** actions (wash, clean, laundry done) all have Undo, which puts
   the since-wash count back too.
-- **Leaders** (the last tab) is just for fun: most worn clothes and outfits,
+- **Leaders** (the tab before Settings) is just for fun: most worn clothes and outfits,
   your mood split, streaks, fun facts and what's gathering dust.
 - **Hair** (Settings, off by default): keep a list of hairstyles tagged with
   the moods they suit; Today suggests one with the outfit, prefers styles
