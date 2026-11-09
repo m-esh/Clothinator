@@ -69,9 +69,11 @@ export const LOCAL_MODEL = 'onnx-community/Qwen2.5-0.5B-Instruct';
 //   - the CPU (WebAssembly), 8-bit: works everywhere, slower, 512 MB
 // Asking a GPU without 16-bit support for the 16-bit model fails, so check.
 const RUNTIMES = {
-  gpu: { device: 'webgpu', dtype: 'q4f16', mb: 483, label: 'graphics chip' },
-  cpu: { device: 'wasm', dtype: 'q8', mb: 512, label: 'processor' },
+  gpu: { device: 'webgpu', dtype: 'q4f16', file: 'model_q4f16.onnx', mb: 483, label: 'graphics chip' },
+  cpu: { device: 'wasm', dtype: 'q8', file: 'model_quantized.onnx', mb: 512, label: 'processor' },
 };
+const MODEL_ROOT = `https://huggingface.co/${LOCAL_MODEL}/resolve/main/`;
+const weightsURL = (key) => `${MODEL_ROOT}onnx/${RUNTIMES[key].file}`;
 
 let runtimeP = null;
 export function pickRuntime() {
@@ -105,27 +107,24 @@ let genP = null;
 let libRef = null;
 async function build(m, key, onProgress) {
   const rt = RUNTIMES[key];
-  const files = new Map();
-  return m.pipeline('text-generation', LOCAL_MODEL, {
-    device: rt.device,
-    dtype: rt.dtype,
-    progress_callback: (e) => {
-      if (e.status === 'progress' && e.total) {
-        files.set(e.file, [e.loaded, e.total]);
-        let l = 0, t = 0;
-        for (const [a, b] of files.values()) { l += a; t += b; }
-        // The small files finish before the big one starts: measure against
-        // the model's known size so the bar doesn't sit at 100% meanwhile.
-        onProgress?.(Math.min(1, l / Math.max(t, rt.mb * 1e6)));
-      }
-    },
-  });
+  const store = await import('./model-store.js');
+  // The weights, in resumable pieces (this is the 500 MB part).
+  await store.download(weightsURL(key), (done, total) => onProgress?.(Math.min(0.999, done / total)));
+  // Everything transformers.js fetches is served from (and kept in) that store.
+  m.env.useBrowserCache = false;
+  m.env.useCustomCache = true;
+  m.env.customCache = store.cache;
+  return m.pipeline('text-generation', LOCAL_MODEL, { device: rt.device, dtype: rt.dtype });
 }
 
 export function loadLocal(onProgress) {
   if (!genP) {
     genP = (async () => {
       let key = await pickRuntime();
+      // Already have the other version (an earlier fallback)? Use that.
+      const store = await import('./model-store.js');
+      const other = key === 'gpu' ? 'cpu' : 'gpu';
+      if (!(await store.isStored(weightsURL(key))) && (await store.isStored(weightsURL(other))) && (other === 'cpu' || key === 'gpu')) key = other;
       const rt = RUNTIMES[key];
       // Room to store it? (Ask the phone to keep it, too.)
       try {
@@ -138,8 +137,7 @@ export function loadLocal(onProgress) {
         const m = libRef || await import(/* @vite-ignore */ LIB);
         libRef = m;
         m.env.allowLocalModels = false;
-        m.env.useBrowserCache = true;
-        // One retry for a dropped connection; files already saved aren't fetched again.
+        // One retry for a dropped connection; pieces already saved aren't fetched again.
         for (let attempt = 0; ; attempt++) {
           try {
             return await build(m, key, onProgress);
@@ -178,15 +176,15 @@ export async function askLocal({ system, messages, onText, onProgress }) {
 }
 
 export async function localCached() {
-  try {
-    const cache = await caches.open('transformers-cache');
-    return (await cache.keys()).some((r) => r.url.includes(LOCAL_MODEL) && r.url.endsWith('.onnx'));
-  } catch { return false; }
+  const store = await import('./model-store.js');
+  return (await store.isStored(weightsURL('gpu'))) || (await store.isStored(weightsURL('cpu')));
 }
 
 export async function removeLocal() {
   genP = null;
-  try {
+  const store = await import('./model-store.js');
+  await store.removeAll(MODEL_ROOT).catch(() => {});
+  try { // anything an earlier version left in the browser cache
     const cache = await caches.open('transformers-cache');
     for (const r of await cache.keys()) if (r.url.includes(LOCAL_MODEL)) await cache.delete(r);
   } catch { /* nothing cached */ }
