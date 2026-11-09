@@ -16,6 +16,7 @@ let models = null; // { background, classify } once checked
 let downloading = null;
 let chatInfo = null; // { key, local, supported } once checked
 let chatDownloading = null;
+let chatError = null; // why the last download failed
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
 const hourLabel = (x) => (x === 0 ? '12am' : x === 12 ? '12pm' : x > 12 ? `${x - 12}pm` : `${x}am`);
@@ -270,13 +271,13 @@ function renderChat(root, rerender) {
     chatInfo = { checking: true };
     Promise.all([claudeKey(), import('../ai/brain.js')]).then(async ([key, b]) => {
       const local = await b.localCached();
-      chatInfo = { key, local, supported: b.localSupported(), b };
+      chatInfo = { key, local, supported: b.localSupported(), b, rt: b.runtimeInfo(await b.pickRuntime()) };
       if (!!c.localReady !== local) await setChat({ localReady: local });
       rerender();
     });
   }
   if (chatInfo.checking) return;
-  const { key, local, supported, b } = chatInfo;
+  const { key, local, supported, b, rt } = chatInfo;
   const brain = c.brain || 'auto';
   const model = c.model || b.DEFAULT_CLAUDE;
   const name = valet.current()?.name || 'your valet';
@@ -295,11 +296,14 @@ function renderChat(root, rerender) {
       h('li', null,
         h('div', { class: 'main' },
           h('div', null, 'On-phone model'),
-          h('div', { class: 'tiny' }, !supported ? 'Needs WebGPU (iOS 26 or later)' : local ? 'Downloaded · free and private' : `Free and private · ${b.LOCAL_SIZE}, once`)),
+          h('div', { class: 'tiny' }, !supported ? 'This phone can’t run it' : local ? `Downloaded · runs on the ${rt.label}` : `Free and private · ${rt.mb} MB, once, on Wi-Fi`)),
         chatDownloading ? h('span', { class: 'small faint num' }, `${Math.round(chatDownloading.p * 100)}%`)
           : local ? h('button', { class: 'link small danger', onclick: async () => { await b.removeLocal(); await setChat({ localReady: false }); chatInfo = null; rerender(); toast('Chat model removed'); } }, 'Remove')
           : supported ? h('button', { class: 'btn ghost small', onclick: () => downloadChat(b, setChat, rerender) }, 'Download') : null),
-      chatDownloading ? h('li', null, h('div', { class: 'progress', style: { flex: 1 } }, h('div', { style: { width: `${Math.round(chatDownloading.p * 100)}%` } }))) : null,
+      chatDownloading ? h('li', null, h('div', { style: { flex: 1 } },
+        h('div', { class: 'progress' }, h('div', { style: { width: `${Math.round(chatDownloading.p * 100)}%` } })),
+        h('div', { class: 'tiny faint', style: { marginTop: '6px' } }, chatDownloading.p >= 0.999 ? 'Starting it up…' : 'Keep this screen open until it finishes.'))) : null,
+      !chatDownloading && chatError ? h('li', null, h('div', { class: 'main' }, h('div', { class: 'tiny warn' }, chatError))) : null,
       h('li', null,
         h('div', { class: 'main' },
           h('div', null, 'Claude API key'),
@@ -317,6 +321,7 @@ function renderChat(root, rerender) {
 
 async function downloadChat(b, setChat, rerender) {
   chatDownloading = { p: 0 };
+  chatError = null;
   rerender();
   try {
     let last = 0;
@@ -324,8 +329,9 @@ async function downloadChat(b, setChat, rerender) {
     await setChat({ localReady: true });
     toast('Chat model ready');
   } catch (e) {
-    console.error(e);
-    toast(e.message?.includes('WebGPU') ? e.message : 'Download failed. Check the connection and try again.');
+    console.error(e, e?.raw);
+    chatError = e?.message || 'Download failed. Try again on Wi-Fi.';
+    toast('Download failed');
   }
   chatDownloading = null;
   chatInfo = null;

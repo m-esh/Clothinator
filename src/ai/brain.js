@@ -63,33 +63,99 @@ export async function askClaude({ key, model = DEFAULT_CLAUDE, system, messages,
 
 const LIB = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6';
 export const LOCAL_MODEL = 'onnx-community/Qwen2.5-0.5B-Instruct';
-export const LOCAL_SIZE = 'about 480 MB';
 
-export const localSupported = () => typeof navigator !== 'undefined' && !!navigator.gpu;
+// Two ways to run it, picked for this phone:
+//   - the GPU (WebGPU) with 16-bit maths: fastest, 483 MB
+//   - the CPU (WebAssembly), 8-bit: works everywhere, slower, 512 MB
+// Asking a GPU without 16-bit support for the 16-bit model fails, so check.
+const RUNTIMES = {
+  gpu: { device: 'webgpu', dtype: 'q4f16', mb: 483, label: 'graphics chip' },
+  cpu: { device: 'wasm', dtype: 'q8', mb: 512, label: 'processor' },
+};
+
+let runtimeP = null;
+export function pickRuntime() {
+  return (runtimeP ||= (async () => {
+    try {
+      const adapter = await navigator.gpu?.requestAdapter();
+      if (adapter?.features.has('shader-f16')) return 'gpu';
+    } catch { /* no WebGPU */ }
+    return 'cpu';
+  })());
+}
+export const runtimeInfo = (k) => RUNTIMES[k];
+export const localSupported = () => typeof WebAssembly !== 'undefined';
+
+// Keep the screen on while downloading: iOS pauses a web app when the screen
+// locks or you switch apps, and the big file then has to start again.
+async function stayAwake() {
+  try { return await navigator.wakeLock?.request('screen'); } catch { return null; }
+}
+
+// Plain-language reasons, keeping the original message for Settings.
+function explain(e, mb) {
+  const raw = String(e?.message || e || '');
+  if (/quota|storage|space|QuotaExceeded/i.test(raw)) return new BrainError('space', `Not enough free space on the phone. It needs about ${mb} MB.`);
+  if (/fetch|network|load failed|aborted|offline/i.test(raw)) return new BrainError('network', 'The download was interrupted. Stay on this screen with the phone unlocked, on Wi-Fi, and try again.');
+  if (/memory|allocation|RangeError|out of bounds/i.test(raw)) return new BrainError('memory', 'The phone ran out of memory loading it. Close other apps and try again.');
+  return new BrainError('unknown', `The model couldn’t start (${raw.slice(0, 120) || 'unknown error'}).`);
+}
 
 let genP = null;
 let libRef = null;
+async function build(m, key, onProgress) {
+  const rt = RUNTIMES[key];
+  const files = new Map();
+  return m.pipeline('text-generation', LOCAL_MODEL, {
+    device: rt.device,
+    dtype: rt.dtype,
+    progress_callback: (e) => {
+      if (e.status === 'progress' && e.total) {
+        files.set(e.file, [e.loaded, e.total]);
+        let l = 0, t = 0;
+        for (const [a, b] of files.values()) { l += a; t += b; }
+        // The small files finish before the big one starts: measure against
+        // the model's known size so the bar doesn't sit at 100% meanwhile.
+        onProgress?.(Math.min(1, l / Math.max(t, rt.mb * 1e6)));
+      }
+    },
+  });
+}
+
 export function loadLocal(onProgress) {
-  if (!localSupported()) return Promise.reject(new BrainError('unsupported', 'This phone can’t run the on-phone model (it needs WebGPU, iOS 26 or later).'));
   if (!genP) {
-    const files = new Map();
-    genP = import(/* @vite-ignore */ LIB).then(async (m) => {
-      libRef = m;
-      m.env.allowLocalModels = false;
-      m.env.useBrowserCache = true;
-      return m.pipeline('text-generation', LOCAL_MODEL, {
-        device: 'webgpu',
-        dtype: 'q4f16',
-        progress_callback: (e) => {
-          if (e.status === 'progress' && e.total) {
-            files.set(e.file, [e.loaded, e.total]);
-            let l = 0, t = 0;
-            for (const [a, b] of files.values()) { l += a; t += b; }
-            onProgress?.(t ? l / t : 0);
+    genP = (async () => {
+      let key = await pickRuntime();
+      const rt = RUNTIMES[key];
+      // Room to store it? (Ask the phone to keep it, too.)
+      try {
+        await navigator.storage?.persist?.();
+        const est = await navigator.storage?.estimate?.();
+        if (est?.quota && est.quota - (est.usage || 0) < rt.mb * 1.1e6) throw new BrainError('space', `Not enough free space on the phone. It needs about ${rt.mb} MB.`);
+      } catch (e) { if (e instanceof BrainError) throw e; }
+      const lock = await stayAwake();
+      try {
+        const m = libRef || await import(/* @vite-ignore */ LIB);
+        libRef = m;
+        m.env.allowLocalModels = false;
+        m.env.useBrowserCache = true;
+        // One retry for a dropped connection; files already saved aren't fetched again.
+        for (let attempt = 0; ; attempt++) {
+          try {
+            return await build(m, key, onProgress);
+          } catch (e) {
+            const err = explain(e, RUNTIMES[key].mb);
+            if (err.kind === 'network' && attempt === 0) continue;
+            // The GPU path can fail to start on some phones: fall back to the CPU.
+            if (key === 'gpu' && err.kind === 'unknown') { key = 'cpu'; runtimeP = Promise.resolve('cpu'); continue; }
+            err.raw = String(e?.message || e);
+            throw err;
           }
-        },
-      });
-    });
+        }
+      } finally {
+        lock?.release?.().catch(() => {});
+      }
+    })();
     genP.catch(() => { genP = null; });
   }
   return genP;

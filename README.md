@@ -111,10 +111,13 @@ anything else. They answer in character, using today's weather, the outfit
 on show, your closet, the laundry and the last week of wear. Pick who answers
 in **Settings → Chat**:
 
-- **On the phone** (free, private): a small model (Qwen2.5 0.5B, about
-  480 MB, downloaded once over Wi-Fi). It runs with WebGPU, so it needs
-  iOS 26 or later. Weather and wardrobe questions are answered straight from
-  the app's own numbers, so those stay accurate; the model handles the rest.
+- **On the phone** (free, private): a small model (Qwen2.5 0.5B), downloaded
+  once over Wi-Fi. It runs on the graphics chip when the phone supports
+  16-bit WebGPU (483 MB), otherwise on the processor (512 MB, slower). Keep
+  the screen open while it downloads: iOS pauses web apps in the background.
+  If it fails, Settings shows why. Weather and wardrobe questions are answered
+  straight from the app's own numbers, so those stay accurate; the model
+  handles the rest.
 - **Claude** (smarter, needs internet): paste an Anthropic API key from
   console.anthropic.com. It's stored only on the phone and left out of
   backups. Each message costs a little (Opus 5.5 about a cent, Haiku 5.5 far
