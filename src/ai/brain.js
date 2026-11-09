@@ -168,8 +168,8 @@ export async function askLocal({ system, messages, onText, onProgress }) {
     callback_function: (t) => { text += t; onText?.(text); },
   });
   // A small model does best with a short history.
-  const chat = [{ role: 'system', content: system }, ...messages.slice(-6)];
-  const out = await gen(chat, { max_new_tokens: 160, do_sample: false, repetition_penalty: 1.1, streamer });
+  const chat = [{ role: 'system', content: system }, ...messages.slice(-4)];
+  const out = await gen(chat, { max_new_tokens: 110, do_sample: false, repetition_penalty: 1.1, streamer });
   const last = out?.[0]?.generated_text;
   const reply = Array.isArray(last) ? last[last.length - 1]?.content : text;
   return (reply || text).trim();

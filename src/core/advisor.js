@@ -56,6 +56,30 @@ export function persona(m, unit = 'C') {
   ].join(' ');
 }
 
+// A much shorter brief for the small on-phone model: long fact sheets
+// confuse it, so just the voice, today's weather and what's clean.
+export function localPrompt(m, ctx) {
+  const unit = ctx.unit || 'C';
+  const w = ctx.weather;
+  const clean = (ctx.items || []).filter((i) => !i.inLaundry).slice(0, 24).map((i) => lower(nameOf(i)));
+  const pieces = outfitPieces(ctx.outfit).map((i) => lower(nameOf(i)));
+  return [
+    `You are ${m.name}, a witty British valet. Give practical, specific advice in one or two short sentences. If asked something unrelated to clothes, answer briefly and kindly.`,
+    '',
+    w ? `Today's weather: ${toUnit(w.feelsMin, unit)}° to ${toUnit(w.feelsMax, unit)}°${unit}${w.wet ? (w.wetFrom != null && w.wetFrom > w.from ? `, rain from ${fmtHour(w.wetFrom)}` : ', rain') : ', dry'}${w.windy ? ', windy' : ''}.` : null,
+    clean.length ? `Wardrobe: ${clean.join(', ')}.` : null,
+    pieces.length ? `${ctx.worn ? 'Wearing today' : 'Today\'s suggestion'}: ${pieces.join(', ')}.` : null,
+  ].filter((x) => x != null).join('\n');
+}
+
+// Small models ramble and add markdown: keep the first few sentences, plain.
+export function tidyReply(t, max = 3) {
+  let s = String(t || '').replace(/\*\*|__|^#+\s*/gm, '').replace(/^(certainly|sure|of course)[!,.]\s*/i, '').replace(/\s+/g, ' ').trim();
+  const parts = s.match(/[^.!?]+[.!?]+["’”)]*|[^.!?]+$/g) || [s];
+  s = parts.slice(0, max).join('').trim();
+  return s;
+}
+
 // ── quick answers, straight from the app's own data ─────────
 
 const INTENTS = [

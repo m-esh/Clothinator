@@ -12,7 +12,7 @@ import { h, sheet } from './dom.js';
 import * as store from '../data/store.js';
 import { state } from '../data/store.js';
 import * as valet from './mascot.js';
-import { facts, persona, quickAnswer, intentOf } from '../core/advisor.js';
+import { facts, persona, quickAnswer, intentOf, localPrompt, tidyReply } from '../core/advisor.js';
 import { isoDate } from '../core/week.js';
 
 const SUGGESTIONS = ['Do I need a jacket?', 'What’s the weather like?', 'Will it rain?', 'What should I wash?'];
@@ -167,7 +167,7 @@ async function answer(q, log, brain, m, onText, setController) {
     setController(c);
     return brainMod.askClaude({ key: await claudeKey(), model: state.prefs.chat?.model, system, messages: msgs, onText, signal: c.signal });
   }
-  return brainMod.askLocal({ system, messages: msgs, onText });
+  return tidyReply(await brainMod.askLocal({ system: localPrompt(m, ctx), messages: msgs, onText: (t) => onText(tidyReply(t)) }));
 }
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
