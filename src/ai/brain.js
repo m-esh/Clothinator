@@ -75,14 +75,14 @@ const RUNTIMES = {
 const MODEL_ROOT = `https://huggingface.co/${LOCAL_MODEL}/resolve/main/`;
 const weightsURL = (key) => `${MODEL_ROOT}onnx/${RUNTIMES[key].file}`;
 
+// A step that might never answer on some phones gets a time limit.
+const within = (ms, p, fallback) => Promise.race([Promise.resolve(p).catch(() => fallback), new Promise((r) => setTimeout(() => r(fallback), ms))]);
+
 let runtimeP = null;
 export function pickRuntime() {
   return (runtimeP ||= (async () => {
-    try {
-      const adapter = await navigator.gpu?.requestAdapter();
-      if (adapter?.features.has('shader-f16')) return 'gpu';
-    } catch { /* no WebGPU */ }
-    return 'cpu';
+    const adapter = await within(3000, navigator.gpu?.requestAdapter?.(), null);
+    return adapter?.features?.has('shader-f16') ? 'gpu' : 'cpu';
   })());
 }
 export const runtimeInfo = (k) => RUNTIMES[k];
@@ -90,57 +90,65 @@ export const localSupported = () => typeof WebAssembly !== 'undefined';
 
 // Keep the screen on while downloading: iOS pauses a web app when the screen
 // locks or you switch apps, and the big file then has to start again.
-async function stayAwake() {
-  try { return await navigator.wakeLock?.request('screen'); } catch { return null; }
+function stayAwake() {
+  return within(1500, navigator.wakeLock?.request?.('screen'), null);
 }
 
 // Plain-language reasons, keeping the original message for Settings.
 function explain(e, mb) {
   const raw = String(e?.message || e || '');
   if (/quota|storage|space|QuotaExceeded/i.test(raw)) return new BrainError('space', `Not enough free space on the phone. It needs about ${mb} MB.`);
-  if (/fetch|network|load failed|aborted|offline/i.test(raw)) return new BrainError('network', 'The download was interrupted. Stay on this screen with the phone unlocked, on Wi-Fi, and try again.');
+  if (/fetch|network|load failed|aborted|offline|stalled|ended early|HTTP/i.test(raw)) return new BrainError('network', 'The download was interrupted. Stay on this screen with the phone unlocked, on Wi-Fi, and try again.');
   if (/memory|allocation|RangeError|out of bounds/i.test(raw)) return new BrainError('memory', 'The phone ran out of memory loading it. Close other apps and try again.');
   return new BrainError('unknown', `The model couldn’t start (${raw.slice(0, 120) || 'unknown error'}).`);
 }
 
 let genP = null;
 let libRef = null;
-async function build(m, key, onProgress) {
+async function build(m, key, cb) {
   const rt = RUNTIMES[key];
   const store = await import('./model-store.js');
-  // The weights, in resumable pieces (this is the 500 MB part).
-  await store.download(weightsURL(key), (done, total) => onProgress?.(Math.min(0.999, done / total)));
+  // The weights, saved in resumable pieces as they stream in (the 500 MB part).
+  await store.download(weightsURL(key), {
+    expectedBytes: rt.mb * 1e6,
+    onStage: cb.onStage,
+    onBytes: (done, total) => cb.onProgress?.(Math.min(0.999, done / total), done, total),
+  });
   // Everything transformers.js fetches is served from (and kept in) that store.
+  cb.onStage?.('Starting it up…');
   m.env.useBrowserCache = false;
   m.env.useCustomCache = true;
   m.env.customCache = store.cache;
   return m.pipeline('text-generation', LOCAL_MODEL, { device: rt.device, dtype: rt.dtype });
 }
 
-export function loadLocal(onProgress) {
+// cb: { onProgress(fraction, bytes, total), onStage(text) }, or just onProgress.
+export function loadLocal(cb = {}) {
+  if (typeof cb === 'function') cb = { onProgress: cb };
   if (!genP) {
     genP = (async () => {
+      cb.onStage?.('Getting ready…');
       let key = await pickRuntime();
       // Already have the other version (an earlier fallback)? Use that.
       const store = await import('./model-store.js');
-      const other = key === 'gpu' ? 'cpu' : 'gpu';
-      if (!(await store.isStored(weightsURL(key))) && (await store.isStored(weightsURL(other))) && (other === 'cpu' || key === 'gpu')) key = other;
+      if (key === 'gpu' && !(await store.isStored(weightsURL('gpu'))) && (await store.isStored(weightsURL('cpu')))) key = 'cpu';
       const rt = RUNTIMES[key];
       // Room to store it? (Ask the phone to keep it, too.)
-      try {
-        await navigator.storage?.persist?.();
-        const est = await navigator.storage?.estimate?.();
-        if (est?.quota && est.quota - (est.usage || 0) < rt.mb * 1.1e6) throw new BrainError('space', `Not enough free space on the phone. It needs about ${rt.mb} MB.`);
-      } catch (e) { if (e instanceof BrainError) throw e; }
+      await within(2000, navigator.storage?.persist?.(), false);
+      const est = await within(2000, navigator.storage?.estimate?.(), null);
+      if (est?.quota && est.quota - (est.usage || 0) < rt.mb * 1.1e6 && !(await store.isStored(weightsURL(key)))) {
+        throw new BrainError('space', `Not enough free space on the phone. It needs about ${rt.mb} MB.`);
+      }
       const lock = await stayAwake();
       try {
+        cb.onStage?.('Loading the AI library…');
         const m = libRef || await import(/* @vite-ignore */ LIB);
         libRef = m;
         m.env.allowLocalModels = false;
         // One retry for a dropped connection; pieces already saved aren't fetched again.
         for (let attempt = 0; ; attempt++) {
           try {
-            return await build(m, key, onProgress);
+            return await build(m, key, cb);
           } catch (e) {
             const err = explain(e, RUNTIMES[key].mb);
             if (err.kind === 'network' && attempt === 0) continue;
@@ -160,7 +168,7 @@ export function loadLocal(onProgress) {
 }
 
 export async function askLocal({ system, messages, onText, onProgress }) {
-  const gen = await loadLocal(onProgress);
+  const gen = await loadLocal({ onProgress });
   let text = '';
   const streamer = new libRef.TextStreamer(gen.tokenizer, {
     skip_prompt: true,

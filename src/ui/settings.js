@@ -297,12 +297,15 @@ function renderChat(root, rerender) {
         h('div', { class: 'main' },
           h('div', null, 'On-phone model'),
           h('div', { class: 'tiny' }, !supported ? 'This phone can’t run it' : local ? `Downloaded · runs on the ${rt.label}` : `Free and private · ${rt.mb} MB, once, on Wi-Fi`)),
-        chatDownloading ? h('span', { class: 'small faint num' }, `${Math.round(chatDownloading.p * 100)}%`)
+        chatDownloading ? h('span', { class: 'small faint num' }, chatDownloading.total ? `${Math.round(chatDownloading.p * 100)}%` : '')
           : local ? h('button', { class: 'link small danger', onclick: async () => { await b.removeLocal(); await setChat({ localReady: false }); chatInfo = null; rerender(); toast('Chat model removed'); } }, 'Remove')
           : supported ? h('button', { class: 'btn ghost small', onclick: () => downloadChat(b, setChat, rerender) }, 'Download') : null),
       chatDownloading ? h('li', null, h('div', { style: { flex: 1 } },
         h('div', { class: 'progress' }, h('div', { style: { width: `${Math.round(chatDownloading.p * 100)}%` } })),
-        h('div', { class: 'tiny faint', style: { marginTop: '6px' } }, chatDownloading.p >= 0.999 ? 'Starting it up…' : 'Keep this screen open until it finishes.'))) : null,
+        h('div', { class: 'tiny faint num', style: { marginTop: '6px' } },
+          chatDownloading.stage === 'Downloading' && chatDownloading.total
+            ? `${Math.round(chatDownloading.bytes / 1e6)} of ${Math.round(chatDownloading.total / 1e6)} MB · keep this screen open`
+            : chatDownloading.stage || 'Getting ready…'))) : null,
       !chatDownloading && chatError ? h('li', null, h('div', { class: 'main' }, h('div', { class: 'tiny warn' }, chatError))) : null,
       h('li', null,
         h('div', { class: 'main' },
@@ -320,12 +323,20 @@ function renderChat(root, rerender) {
 }
 
 async function downloadChat(b, setChat, rerender) {
-  chatDownloading = { p: 0 };
+  chatDownloading = { p: 0, stage: 'Getting ready…', bytes: 0, total: 0 };
   chatError = null;
   rerender();
   try {
     let last = 0;
-    await b.loadLocal((p) => { chatDownloading.p = p; if (p - last > 0.01) { last = p; rerender(); } });
+    let lastAt = 0;
+    await b.loadLocal({
+      onStage: (t) => { chatDownloading.stage = t; rerender(); },
+      onProgress: (p, bytes, total) => {
+        Object.assign(chatDownloading, { p, bytes, total });
+        const now = Date.now();
+        if (now - lastAt > 250 || p - last > 0.01) { last = p; lastAt = now; rerender(); }
+      },
+    });
     await setChat({ localReady: true });
     toast('Chat model ready');
   } catch (e) {
