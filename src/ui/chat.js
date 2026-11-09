@@ -144,7 +144,8 @@ async function answer(q, log, brain, m, onText, setController) {
   const v = m.voice;
   // Weather and wardrobe questions: the app's own numbers beat a small model.
   if (brain !== 'claude') {
-    const quick = quickAnswer(q, ctx, v);
+    // ("What should I wear" with nothing picked yet is better left to the model.)
+    const quick = brain === 'local' && intentOf(q) === 'wear' && !ctx.outfit ? null : quickAnswer(q, ctx, v);
     if (quick) { await pause(350); return quick; }
     if (brain === 'quick') {
       return intentOf(q) ? quick : (v.chat?.offTopic || 'I can tell you about the weather, your outfit and the laundry. For anything else, set up chat in Settings.');
