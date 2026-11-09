@@ -13,6 +13,7 @@ import { isoDate, isWeekend, weekModes, fancyNudge, fancyNudgeKind, weekdayStrea
 import { stats } from '../core/catalog.js';
 import { openWeather } from './weather-sheet.js';
 import { openDay } from './history.js';
+import { setChatContext } from './chat.js';
 import * as valet from './mascot.js';
 import { pickHair, DEFAULT_STYLES } from '../core/hair.js';
 
@@ -74,6 +75,16 @@ function compute(mode, today) {
   if (results.size > 12) results.delete(results.keys().next().value);
   return result;
 }
+
+// What the valet can see when you chat: the weather and the outfit on show.
+setChatContext(() => {
+  const today = isoDate();
+  const worn = store.wearsOn(today).at(-1);
+  let outfit = null;
+  if (worn && !S?.changing) outfit = assemble(worn.itemIds.map(store.itemById).filter(Boolean));
+  else if (S?.date === today && S.mode) outfit = currentOutfit(today).outfit || null;
+  return { weather: W.status === 'ok' ? W.summary : null, place: W.place, mode: S?.date === today ? S.mode : null, outfit, worn: !!worn && !S?.changing };
+});
 
 // Heavy work waits for the launch intro so its animation stays smooth.
 const introDone = window.__introDone || Promise.resolve();

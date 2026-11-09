@@ -10,9 +10,12 @@ import { invalidateWeather } from './today.js';
 import { PALETTES } from './palette.js';
 import * as valet from './mascot.js';
 import { DEFAULT_STYLES } from '../core/hair.js';
+import { claudeKey, setClaudeKey } from './chat.js';
 
 let models = null; // { background, classify } once checked
 let downloading = null;
+let chatInfo = null; // { key, local, supported } once checked
+let chatDownloading = null;
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
 const hourLabel = (x) => (x === 0 ? '12am' : x === 12 ? '12pm' : x > 12 ? `${x - 12}pm` : `${x}am`);
@@ -55,6 +58,9 @@ export function renderSettings(root, rerender) {
     chosen !== 'none' && valet.art(chosen) ? h('div', { style: { marginTop: '12px' } },
       valet.says([valet.voice(chosen).hello, valet.art(chosen).blurb], { key: chosen })) : null,
   ));
+
+  // ── chat ──
+  if (chosen !== 'none') renderChat(root, rerender);
 
   // ── weather ──
   root.append(h('section', null,
@@ -166,7 +172,7 @@ export function renderSettings(root, rerender) {
   ));
 
   root.append(h('p', { class: 'tiny faint', style: { marginTop: '36px' } },
-    'Clad 1.0 · weather by Open-Meteo · everything stays on this phone'));
+    `Clad 1.0 · weather by Open-Meteo · ${chatInfo?.key ? 'chat goes to Anthropic, everything else stays on this phone' : 'everything stays on this phone'}`));
 }
 
 function hourSelect(value, onChange) {
@@ -253,4 +259,98 @@ function hairSheet(styles, setHair) {
       close();
     } }, 'Add'),
   ));
+}
+
+// ── valet chat ─────────────────────────────────────────────
+
+function renderChat(root, rerender) {
+  const c = state.prefs.chat || {};
+  const setChat = (patch) => store.updatePrefs({ chat: { ...c, ...patch } });
+  if (!chatInfo) {
+    chatInfo = { checking: true };
+    Promise.all([claudeKey(), import('../ai/brain.js')]).then(async ([key, b]) => {
+      const local = await b.localCached();
+      chatInfo = { key, local, supported: b.localSupported(), b };
+      if (!!c.localReady !== local) await setChat({ localReady: local });
+      rerender();
+    });
+  }
+  if (chatInfo.checking) return;
+  const { key, local, supported, b } = chatInfo;
+  const brain = c.brain || 'auto';
+  const model = c.model || b.DEFAULT_CLAUDE;
+  const name = valet.current()?.name || 'your valet';
+  const who = brain === 'local' ? (local ? 'the on-phone model' : null)
+    : key && brain !== 'local' ? 'Claude' : local && brain !== 'claude' ? 'the on-phone model' : null;
+
+  root.append(h('section', null,
+    h('div', { class: 'label', style: { marginBottom: '8px' } }, 'Chat'),
+    h('p', { class: 'small muted', style: { marginTop: 0 } },
+      `Tap ${name} to chat. `, who ? `Answered by ${who}.` : 'Right now only weather and wardrobe questions get answers. Add a brain below.'),
+    h('ul', { class: 'list' },
+      h('li', null,
+        h('div', { class: 'main' }, 'Who answers'),
+        h('div', { class: 'seg quiet', style: { width: '210px' } },
+          [['auto', 'Auto'], ['local', 'Phone'], ['claude', 'Claude']].map(([k, l]) => h('button', { 'aria-pressed': String(brain === k), onclick: () => setChat({ brain: k }) }, l)))),
+      h('li', null,
+        h('div', { class: 'main' },
+          h('div', null, 'On-phone model'),
+          h('div', { class: 'tiny' }, !supported ? 'Needs WebGPU (iOS 26 or later)' : local ? 'Downloaded · free and private' : `Free and private · ${b.LOCAL_SIZE}, once`)),
+        chatDownloading ? h('span', { class: 'small faint num' }, `${Math.round(chatDownloading.p * 100)}%`)
+          : local ? h('button', { class: 'link small danger', onclick: async () => { await b.removeLocal(); await setChat({ localReady: false }); chatInfo = null; rerender(); toast('Chat model removed'); } }, 'Remove')
+          : supported ? h('button', { class: 'btn ghost small', onclick: () => downloadChat(b, setChat, rerender) }, 'Download') : null),
+      chatDownloading ? h('li', null, h('div', { class: 'progress', style: { flex: 1 } }, h('div', { style: { width: `${Math.round(chatDownloading.p * 100)}%` } }))) : null,
+      h('li', null,
+        h('div', { class: 'main' },
+          h('div', null, 'Claude API key'),
+          h('div', { class: 'tiny' }, key ? `Saved on this phone · …${key.slice(-4)}` : 'Smarter answers. Costs a little per message.')),
+        key ? h('button', { class: 'link small danger', onclick: async () => { await setClaudeKey(''); chatInfo = null; rerender(); toast('Key removed'); } }, 'Remove')
+          : h('button', { class: 'btn ghost small', onclick: () => keySheet(() => { chatInfo = null; rerender(); }) }, 'Add')),
+      key ? h('li', null,
+        h('div', { class: 'main' }, h('div', null, 'Claude model'), h('div', { class: 'tiny' }, b.CLAUDE_MODELS.find((x) => x.id === model)?.note || '')),
+        h('div', { class: 'seg quiet', style: { width: '150px' } },
+          b.CLAUDE_MODELS.map((x) => h('button', { 'aria-pressed': String(model === x.id), onclick: () => setChat({ model: x.id }) }, x.label.replace('Claude ', '').replace(/ 5\.5$/, ''))))) : null,
+    ),
+    key ? h('p', { class: 'tiny faint', style: { padding: '0 16px', marginTop: '7px' } }, 'With Claude, your question, today\'s weather and your closet list are sent to Anthropic to answer it. Photos are never sent.') : null,
+  ));
+}
+
+async function downloadChat(b, setChat, rerender) {
+  chatDownloading = { p: 0 };
+  rerender();
+  try {
+    let last = 0;
+    await b.loadLocal((p) => { chatDownloading.p = p; if (p - last > 0.01) { last = p; rerender(); } });
+    await setChat({ localReady: true });
+    toast('Chat model ready');
+  } catch (e) {
+    console.error(e);
+    toast(e.message?.includes('WebGPU') ? e.message : 'Download failed. Check the connection and try again.');
+  }
+  chatDownloading = null;
+  chatInfo = null;
+  rerender();
+}
+
+function keySheet(done) {
+  let k = '';
+  sheet('Claude API key', (close) => {
+    const save = async () => {
+      const v = k.trim();
+      if (!/^sk-ant-/.test(v)) { toast('That doesn\'t look like an Anthropic key (sk-ant-…)'); return; }
+      await setClaudeKey(v);
+      close();
+      done();
+      toast('Key saved');
+    };
+    const input = h('input', { class: 'input', type: 'password', placeholder: 'sk-ant-…', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', value: k, oninput: (e) => { k = e.target.value; } });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+    queueMicrotask(() => input.focus());
+    return h('div', null,
+      h('p', { class: 'small muted', style: { marginTop: 0 } },
+        'Create a key at ', h('a', { class: 'link', href: 'https://console.anthropic.com/settings/keys', target: '_blank', rel: 'noopener' }, 'console.anthropic.com'),
+        ' and paste it here. It\'s kept only on this phone, isn\'t included in backups, and is used only to send your chat to Anthropic.'),
+      h('div', { class: 'row' }, input, h('button', { class: 'btn small', onclick: save }, 'Save')),
+      h('p', { class: 'tiny faint' }, 'Tip: set a monthly spend limit on the key in the console.'));
+  });
 }

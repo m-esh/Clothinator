@@ -158,7 +158,11 @@ export async function preload(onProgress) {
 
 export async function clearModels() {
   pipes.clear();
-  try { await caches.delete('transformers-cache'); } catch { /* nothing cached */ }
+  // Only these two models: the valet's chat model shares the cache.
+  try {
+    const cache = await caches.open('transformers-cache');
+    for (const r of await cache.keys()) if (r.url.includes(BG_MODEL) || r.url.includes(CLIP_MODEL)) await cache.delete(r);
+  } catch { /* nothing cached */ }
 }
 
 export { typesIn };

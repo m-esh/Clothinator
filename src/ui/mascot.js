@@ -45,6 +45,7 @@ const VOICES = {
     leaderTop: 'The {item} again. A favourite, clearly.',
     weather: { rainAt: 'Umbrella from {time}.', rain: 'Wet one. Umbrella.', windy: 'Windy. Hold onto your hat.', swing: 'Cold morning, warmer afternoon. Layers.', dry: 'Dry all day.' },
     tips: ['Match the belt to the shoes and nobody notices. Which is the point.', 'One loud piece at a time. Let it do the talking.', 'If in doubt, navy.', 'Roll the sleeves twice, not three times.'],
+    chat: { intro: 'Ask me anything. Jackets, rain, what to wash.', yes: 'Yes.', no: 'No.', offTopic: 'Weather and wardrobe I can do. For the rest, set me up properly in Settings.' },
     hello: 'At your service.',
   },
   bulldog: {
@@ -84,6 +85,7 @@ const VOICES = {
     leaderTop: '{Item}. Most worn. No surprise.',
     weather: { rainAt: 'Rain from {time}. Umbrella.', rain: 'Rain. Umbrella.', windy: 'Windy. Button up.', swing: 'Cold start, warm finish. Layer.', dry: 'Dry.' },
     tips: ['Shoes polished. Always.', 'Fit first. Everything else second.', 'Belt matches shoes. Non-negotiable.', 'Sit down in it before you leave.'],
+    chat: { intro: 'Well? Ask.', yes: 'Yes.', no: 'No.', offTopic: 'Weather and clothes. That\u2019s my lot until you set up chat in Settings.' },
     hello: 'Reporting for duty.',
   },
   corgi: {
@@ -123,6 +125,7 @@ const VOICES = {
     leaderTop: 'The {item}! Your absolute favourite.',
     weather: { rainAt: 'Rain from {time}. Brolly!', rain: 'Rainy one. Brolly!', windy: 'Windy! Hold onto your cap!', swing: 'Chilly morning, lovely afternoon. Layers!', dry: 'Dry all day!' },
     tips: ['A bit of colour goes a long way!', 'White trainers go with nearly everything.', 'Comfy can still be smart!', 'Tuck the shirt in and you look sharper instantly.'],
+    chat: { intro: 'Ooh, a question? Go on, ask me anything!', yes: 'Yes!', no: 'Nope!', offTopic: 'I only know weather and wardrobe for now! Set up chat in Settings and I\u2019ll know loads more.' },
     hello: 'Hello there!',
   },
   valet: {
@@ -162,6 +165,7 @@ const VOICES = {
     leaderTop: 'The {item} remains your most faithful companion.',
     weather: { rainAt: 'Rain from {time}. An umbrella is advised.', rain: 'Rain is expected. An umbrella is advised.', windy: 'It will be blustery. A firm hat, or none at all.', swing: 'A cold start and a mild afternoon. Layers, I think.', dry: 'Dry throughout.' },
     tips: ['The belt should match the shoes.', 'A pocket square need not match the tie. It should merely get along with it.', 'Navy and grey are never wrong.', 'Trousers should just touch the shoe.'],
+    chat: { intro: 'How may I be of assistance?', yes: 'Indeed.', no: 'I think not.', offTopic: 'I\u2019m afraid I\u2019m confined to the weather and your wardrobe until chat is set up in Settings.' },
     hello: 'At your service.',
   },
 };
@@ -192,40 +196,27 @@ function hash(t) {
 }
 
 // A speech bubble from the current valet, or nothing when it's switched off.
-// `more`: extra remarks shown one by one when the valet is tapped.
-export function says(lines, { key, more = [] } = {}) {
+// Tapping it opens a chat with them, starting from what they just said.
+// (`more` is accepted for older callers and no longer used.)
+export function says(lines, { key } = {}) {
   const m = key ? { key, ...art(key) } : current();
   const text = lines.filter(Boolean).join(' ');
   if (!m || !text) return null;
-  const extra = more.filter(Boolean).filter((t) => t !== text);
   const p = h('p', { key: text }, text);
   // Keyed by what's said, so each new line arrives with a little hop.
   const face = avatar(m.key, 40, text);
-  // Works on whatever is on screen (the page patches in place, so the
-  // elements built here may not be the live ones).
-  const next = (e) => {
-    if (!extra.length) return;
-    const root = e.currentTarget;
-    const live = root.querySelector('.valet-bubble p');
-    const liveFace = root.querySelector('.valet-avatar');
-    const i = ((Number(root.dataset.i ?? -1) + 1) % (extra.length + 1));
-    root.dataset.i = String(i);
-    live.textContent = i === extra.length ? text : extra[i];
-    liveFace.classList.remove('hop');
-    void liveFace.offsetWidth;
-    liveFace.classList.add('hop');
-  };
+  const chat = () => import('./chat.js').then((c) => c.openChat({ opening: text }));
   return h('div', {
-    class: `valet${extra.length ? ' talks' : ''}`,
-    role: extra.length ? 'button' : 'note',
-    tabindex: extra.length ? '0' : null,
-    'aria-label': extra.length ? `${m.name} says. Tap for more.` : `${m.name} says`,
-    onclick: next,
-    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); next(); } },
+    class: 'valet talks',
+    role: 'button',
+    tabindex: '0',
+    'aria-label': `${m.name} says: ${text} Tap to chat.`,
+    onclick: chat,
+    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); chat(); } },
   },
   face,
   h('div', { class: 'valet-bubble' },
-    h('span', { class: 'valet-name' }, m.name, extra.length ? h('span', { class: 'valet-more', 'aria-hidden': 'true' }, ' \u00b7 tap for more') : null),
+    h('span', { class: 'valet-name' }, m.name, h('span', { class: 'valet-more', 'aria-hidden': 'true' }, ' \u00b7 tap to chat')),
     p));
 }
 

@@ -101,7 +101,12 @@ export async function importBackup(file) {
   checkBackup(data);
   const photos = {};
   for (const [k, url] of Object.entries(data.photos)) photos[k] = await (await fetch(url)).blob();
-  await db.replaceAll({ items: data.items, outfits: data.outfits, wears: data.wears, kv: data.kv || {}, photos });
+  // The chat API key isn't in backups; keep the one on this phone.
+  const kv = { ...(data.kv || {}) };
+  delete kv.claudeKey;
+  const key = await db.get('kv', 'claudeKey');
+  if (key) kv.claudeKey = key;
+  await db.replaceAll({ items: data.items, outfits: data.outfits, wears: data.wears, kv, photos });
   await load();
   return { items: state.items.length };
 }

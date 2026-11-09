@@ -1411,3 +1411,32 @@ button.stats::after { content: ""; position: absolute; top: 14px; right: 14px; w
 .chip-mode.casual { color: var(--casual); }
 .chip-mode.comfy { color: var(--comfy, var(--ink-2)); }
 .hist-count { text-align: center; margin-top: 14px; }
+
+/* chat with the valet */
+.chat { display: flex; flex-direction: column; min-height: 52vh; max-height: 70vh; }
+.chat-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 0 12px; overscroll-behavior: contain; }
+.chat-msg { display: flex; align-items: flex-end; gap: 8px; max-width: 86%; }
+.chat-msg p { margin: 0; padding: 9px 13px; border-radius: 18px; font-size: 15px; line-height: 1.38; white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat-msg.valet p { background: var(--board-2, var(--board)); color: var(--ink); border-bottom-left-radius: 6px; }
+.chat-msg.me { align-self: flex-end; }
+.chat-msg.me p { background: var(--mode, var(--cobalt)); color: var(--on-mode, #0a0a0b); border-bottom-right-radius: 6px; }
+.chat-msg.error p { color: var(--ink-2); font-style: italic; }
+.chat-msg .valet-avatar { flex: none; }
+.chat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chat-chips .chip { font-size: 13px; padding: 7px 12px; border-radius: 999px; }
+.chat-input { display: flex; gap: 8px; align-items: center; }
+.chat-input input { flex: 1; min-width: 0; height: 42px; border-radius: 21px; border: 1px solid var(--seam); background: var(--board); color: var(--ink); padding: 0 16px; font: inherit; font-size: 16px; }
+.chat-input input:focus { outline: none; border-color: var(--ink-3); }
+.chat-send { flex: none; width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--mode, var(--ink)); color: var(--on-mode, #0a0a0b); display: grid; place-items: center; }
+.chat-send[disabled] { opacity: 0.35; }
+.chat-send .chev.up { transform: translateY(2px) rotate(135deg); }
+.chat-send.stop i { width: 12px; height: 12px; border-radius: 2px; background: currentColor; display: block; }
+.chat-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; min-height: 18px; }
+.typing { display: inline-flex; gap: 4px; padding: 4px 0; }
+.typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); animation: typing 1s infinite ease-in-out; }
+.typing i:nth-child(2) { animation-delay: 0.15s; }
+.typing i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing { 0%, 60%, 100% { opacity: 0.3; transform: none; } 30% { opacity: 1; transform: translateY(-3px); } }
+.valet.talks { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.valet.talks:active .valet-bubble { transform: scale(0.98); }
+.valet-bubble { transition: transform 0.15s; }
