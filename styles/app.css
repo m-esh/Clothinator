@@ -1440,3 +1440,4 @@ button.stats::after { content: ""; position: absolute; top: 14px; right: 14px; w
 .valet.talks { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .valet.talks:active .valet-bubble { transform: scale(0.98); }
 .valet-bubble { transition: transform 0.15s; }
+.typing small { margin-left: 8px; font-size: 12px; color: var(--ink-3); align-self: center; }

@@ -13,6 +13,10 @@ test('intents: the common questions are recognised', () => {
   assert.equal(intentOf('Is it windy?'), 'wind');
   assert.equal(intentOf('What should I wash?'), 'wash');
   assert.equal(intentOf('Tell me a joke'), null);
+  assert.equal(intentOf('Does a black bomber jacket go with this outfit'), null);
+  assert.equal(intentOf('Does a black one look good tho'), null);
+  assert.equal(intentOf('Do I need a coat?'), 'jacket');
+  assert.equal(intentOf('Will it rain later?'), 'rain');
 });
 
 test('jacket: yes in the cold and rain, no when hot and dry', () => {
@@ -23,11 +27,11 @@ test('jacket: yes in the cold and rain, no when hot and dry', () => {
 
 test('jacket: names a piece from the closet that is not in the wash', () => {
   const items = closet();
-  const a = quickAnswer('jacket?', ctx(cold, { items }), v);
+  const a = quickAnswer('Do I need a jacket?', ctx(cold, { items }), v);
   const outer = items.filter((i) => ['parka', 'puffer', 'overcoat', 'rain-jacket', 'denim-jacket', 'bomber', 'blazer', 'trench'].includes(i.type));
   assert.ok(outer.some((i) => a.toLowerCase().includes((i.name || '').toLowerCase()) || a.includes('would do')), a);
   for (const i of items) i.inLaundry = true;
-  assert.match(quickAnswer('jacket?', ctx(cold, { items }), v), /Nothing in the closet/);
+  assert.match(quickAnswer('Do I need a jacket?', ctx(cold, { items }), v), /Nothing in the closet/);
 });
 
 test('rain and weather answers use the forecast numbers', () => {

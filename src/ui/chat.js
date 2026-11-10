@@ -32,12 +32,36 @@ export function chatContext() {
   };
 }
 
+// If the app was closed while the on-phone model was loading, iOS ran out
+// of memory. Step down to the Lite model; if Lite did it too, switch the
+// on-phone model off. Never let it crash twice the same way.
+export async function recoverFromCrash() {
+  const b = await import('../ai/brain.js');
+  const size = b.crashedWhileLoading();
+  if (!size) return null;
+  const c = state.prefs.chat || {};
+  if (size === 'standard') {
+    await b.removeLocal('standard');
+    await store.updatePrefs({ chat: { ...c, localSize: 'lite', localReady: false, crashNote: 'Your phone ran out of memory starting the Standard model, so it was removed. Try the Lite one: it\u2019s smaller.' } });
+  } else {
+    await b.removeLocal('lite');
+    await store.updatePrefs({ chat: { ...c, localReady: false, localOff: true, crashNote: 'Your phone ran out of memory starting the on-phone model, so it\u2019s been switched off. Claude (with an API key) works instead.' } });
+  }
+  return size;
+}
+
 // Which brain answers: 'claude' | 'local' | 'quick'.
 export async function brainFor(prefs = state.prefs) {
+  await recoverFromCrash();
   const pref = prefs.chat?.brain || 'auto';
   const key = await claudeKey();
   if (pref !== 'local' && key) return 'claude';
-  if (pref !== 'claude' && prefs.chat?.localReady) return 'local';
+  if (pref !== 'claude' && prefs.chat?.localReady && !prefs.chat?.localOff) {
+    // Check it's really there (an older model may have been marked ready).
+    const b = await import('../ai/brain.js');
+    if (await b.localCached(prefs.chat.localSize || 'standard')) return 'local';
+    await store.updatePrefs({ chat: { ...prefs.chat, localReady: false } });
+  }
   return 'quick';
 }
 
@@ -73,7 +97,7 @@ export async function openChat({ opening } = {}) {
       render();
       scrollDown();
       try {
-        const reply = await answer(q, log, brain, m, (t) => { busy.text = t; schedule(); }, (c) => { controller = c; });
+        const reply = await answer(q, log, brain, m, (t) => { busy.text = t; busy.stage = null; schedule(); }, (c) => { controller = c; }, (st) => { busy.stage = st; schedule(); });
         log.push({ from: 'valet', text: reply });
       } catch (e) {
         log.push({ from: 'valet', text: e.message || 'Something went wrong.', error: true });
@@ -99,7 +123,7 @@ export async function openChat({ opening } = {}) {
       h('div', { class: 'chat-log', 'aria-live': 'polite' },
         log.length ? null : bubble('valet', m.voice.chat?.intro || m.voice.hello, m),
         log.map((x, i) => bubble(x.from, x.text, m, { key: `${i}`, error: x.error })),
-        busy ? bubble('valet', busy.text || '', m, { key: 'busy', typing: !busy.text }) : null),
+        busy ? bubble('valet', busy.text || '', m, { key: 'busy', typing: !busy.text, stage: busy.stage }) : null),
       asked || busy ? null : h('div', { class: 'chat-chips' },
         SUGGESTIONS.map((s) => h('button', { class: 'chip', onclick: () => send(s) }, s))),
       h('div', { class: 'chat-input' },
@@ -124,10 +148,10 @@ function brainLabel(brain) {
   return h('span', null, 'Weather and wardrobe answers only. ', h('a', { class: 'link tiny', href: '#settings' }, 'Set up chat'));
 }
 
-function bubble(from, text, m, { key, error, typing } = {}) {
+function bubble(from, text, m, { key, error, typing, stage } = {}) {
   return h('div', { key, class: `chat-msg ${from}${error ? ' error' : ''}` },
     from === 'valet' ? valet.avatar(m.key, 28) : null,
-    h('p', null, typing ? h('span', { class: 'typing', 'aria-label': `${m.name} is typing` }, h('i'), h('i'), h('i')) : text));
+    h('p', null, typing ? h('span', { class: 'typing', 'aria-label': `${m.name} is typing` }, h('i'), h('i'), h('i'), stage ? h('small', null, stage) : null) : text));
 }
 
 function scrollDown() {
@@ -139,7 +163,7 @@ function scrollDown() {
 
 // ── answering ──────────────────────────────────────────────
 
-async function answer(q, log, brain, m, onText, setController) {
+async function answer(q, log, brain, m, onText, setController, onStage) {
   const ctx = chatContext();
   const v = m.voice;
   // Weather and wardrobe questions: the app's own numbers beat a small model.
@@ -167,7 +191,13 @@ async function answer(q, log, brain, m, onText, setController) {
     setController(c);
     return brainMod.askClaude({ key: await claudeKey(), model: state.prefs.chat?.model, system, messages: msgs, onText, signal: c.signal });
   }
-  return tidyReply(await brainMod.askLocal({ system: localPrompt(m, ctx), messages: msgs, onText: (t) => onText(tidyReply(t)) }));
+  return tidyReply(await brainMod.askLocal({
+    size: state.prefs.chat?.localSize || 'standard',
+    system: localPrompt(m, ctx),
+    messages: msgs,
+    onText: (t) => onText(tidyReply(t)),
+    onStage: (st) => onStage?.(st === 'Starting it up…' ? 'waking up, the first answer takes a moment' : null),
+  }));
 }
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));

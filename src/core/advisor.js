@@ -82,15 +82,17 @@ export function tidyReply(t, max = 3) {
 
 // ── quick answers, straight from the app's own data ─────────
 
+// Only clear questions get an instant answer. "Does a black bomber go with
+// this?" mentions a jacket but isn't asking about the weather.
 const INTENTS = [
-  ['jacket', /\b(jacket|coat|layer|cardigan|blazer|parka|fleece|cold|chilly|freez\w*|warm enough)\b/i],
-  ['rain', /\b(rain\w*|umbrella|wet|showers?|drizzle|waterproof|snow\w*)\b/i],
-  ['wind', /\b(wind\w*|gust\w*|breez\w*|blustery)\b/i],
-  ['shorts', /\b(shorts|sandals|t-?shirt weather)\b/i],
-  ['wash', /\b(wash\w*|laundry|dirty|clean)\b/i],
-  ['forgotten', /\b(haven'?t worn|not worn|forgot\w*|neglect\w*|gathering dust|oldest)\b/i],
-  ['wear', /\b(what (should|do|shall) i wear|wear today|outfit|dress(ed)? for)\b/i],
-  ['weather', /\b(weather|temperature|forecast|hot|warm|how (cold|warm)|degrees|outside|sunny|sun)\b/i],
+  ['jacket', /\b((do|will|should|shall) i (need|want|bring|take|wear|grab) (a |my |an )?(jacket|coat|layer|cardigan|fleece|parka)|(jacket|coat) (weather|today)|is it (cold|chilly|freezing)|how cold|warm enough)\b/i],
+  ['rain', /\b((will|is|going to|gonna) (it )?(rain|be (wet|rainy))|umbrella|rain (today|later)|any rain|snow(ing)? today)\b/i],
+  ['wind', /\b((is|will) it (be )?windy|how windy|wind (today|speed))\b/i],
+  ['shorts', /\b((can|should|could) i (wear|get away with) shorts|shorts weather)\b/i],
+  ['wash', /\b(what (should|do|needs to|to) (i )?wash|needs? (a )?wash(ing)?|laundry|what('s| is) dirty|in the wash)\b/i],
+  ['forgotten', /\b(haven'?t worn|not worn|forg[eo]tten|neglected|gathering dust|oldest)\b/i],
+  ['wear', /\b(what (should|do|shall) i wear( today)?\??$|what am i wearing|today'?s outfit)\b/i],
+  ['weather', /\b(weather|temperature|forecast|how (warm|hot) is it|what('s| is) it like out(side)?)\b/i],
 ];
 
 export function intentOf(q) {

@@ -10,7 +10,7 @@ import { invalidateWeather } from './today.js';
 import { PALETTES } from './palette.js';
 import * as valet from './mascot.js';
 import { DEFAULT_STYLES } from '../core/hair.js';
-import { claudeKey, setClaudeKey } from './chat.js';
+import { claudeKey, setClaudeKey, recoverFromCrash } from './chat.js';
 
 let models = null; // { background, classify } once checked
 let downloading = null;
@@ -267,17 +267,24 @@ function hairSheet(styles, setHair) {
 function renderChat(root, rerender) {
   const c = state.prefs.chat || {};
   const setChat = (patch) => store.updatePrefs({ chat: { ...c, ...patch } });
+  const size = c.localSize || 'standard';
   if (!chatInfo) {
     chatInfo = { checking: true };
     Promise.all([claudeKey(), import('../ai/brain.js')]).then(async ([key, b]) => {
-      const local = await b.localCached();
-      chatInfo = { key, local, supported: b.localSupported(), b, rt: b.runtimeInfo(await b.pickRuntime()) };
-      if (!!c.localReady !== local) await setChat({ localReady: local });
+      await recoverFromCrash();
+      b.removeOldModels(); // frees space taken by the earlier, larger model
+      const cc = state.prefs.chat || {};
+      const sz = cc.localSize || 'standard';
+      const local = await b.localCached(sz);
+      chatInfo = { key, local, supported: b.localSupported(), b, rt: b.runtimeInfo(sz, await b.pickRuntime()), size: sz };
+      if (!!cc.localReady !== local) await store.updatePrefs({ chat: { ...cc, localReady: local } });
       rerender();
     });
   }
   if (chatInfo.checking) return;
-  const { key, local, supported, b, rt } = chatInfo;
+  if (chatInfo.size !== size) { chatInfo = null; renderChat(root, rerender); return; }
+  const { key, supported, b, rt } = chatInfo;
+  const local = chatInfo.local && !c.localOff;
   const brain = c.brain || 'auto';
   const model = c.model || b.DEFAULT_CLAUDE;
   const name = valet.current()?.name || 'your valet';
@@ -294,12 +301,18 @@ function renderChat(root, rerender) {
         h('div', { class: 'seg quiet', style: { width: '210px' } },
           [['auto', 'Auto'], ['local', 'Phone'], ['claude', 'Claude']].map(([k, l]) => h('button', { 'aria-pressed': String(brain === k), onclick: () => setChat({ brain: k }) }, l)))),
       h('li', null,
+        h('div', { class: 'main' }, h('div', null, 'On-phone model'), h('div', { class: 'tiny' }, size === 'lite' ? 'Lite: smallest, simpler answers' : 'Standard: better answers')),
+        h('div', { class: 'seg quiet', style: { width: '150px' } },
+          [['standard', 'Standard'], ['lite', 'Lite']].map(([k, l]) => h('button', { 'aria-pressed': String(size === k), disabled: !!chatDownloading, onclick: () => { if (size !== k) setChat({ localSize: k, localReady: false }); } }, l)))),
+      h('li', null,
         h('div', { class: 'main' },
-          h('div', null, 'On-phone model'),
-          h('div', { class: 'tiny' }, !supported ? 'This phone can’t run it' : local ? `Downloaded · runs on the ${rt.label}` : `Free and private · ${rt.mb} MB, once, on Wi-Fi`)),
+          h('div', null, c.localOff ? 'Switched off' : local ? 'Downloaded' : `${rt.mb} MB, once, on Wi-Fi`),
+          h('div', { class: 'tiny' }, !supported ? 'This phone can’t run it' : c.localOff ? 'Not enough memory on this phone' : local ? `Free and private · runs on the ${rt.label}` : 'Free and private')),
         chatDownloading ? h('span', { class: 'small faint num' }, chatDownloading.total ? `${Math.round(chatDownloading.p * 100)}%` : '')
-          : local ? h('button', { class: 'link small danger', onclick: async () => { await b.removeLocal(); await setChat({ localReady: false }); chatInfo = null; rerender(); toast('Chat model removed'); } }, 'Remove')
-          : supported ? h('button', { class: 'btn ghost small', onclick: () => downloadChat(b, setChat, rerender) }, 'Download') : null),
+          : c.localOff ? h('button', { class: 'link small', onclick: () => setChat({ localOff: false, crashNote: null }) }, 'Try again')
+          : local ? h('button', { class: 'link small danger', onclick: async () => { await b.removeLocal(size); await setChat({ localReady: false }); chatInfo = null; rerender(); toast('Chat model removed'); } }, 'Remove')
+          : supported ? h('button', { class: 'btn ghost small', onclick: () => downloadChat(b, size, setChat, rerender) }, 'Download') : null),
+      c.crashNote && !chatDownloading ? h('li', null, h('div', { class: 'main' }, h('div', { class: 'tiny warn' }, c.crashNote))) : null,
       chatDownloading ? h('li', null, h('div', { style: { flex: 1 } },
         h('div', { class: 'progress' }, h('div', { style: { width: `${Math.round(chatDownloading.p * 100)}%` } })),
         h('div', { class: 'tiny faint num', style: { marginTop: '6px' } },
@@ -322,14 +335,14 @@ function renderChat(root, rerender) {
   ));
 }
 
-async function downloadChat(b, setChat, rerender) {
+async function downloadChat(b, size, setChat, rerender) {
   chatDownloading = { p: 0, stage: 'Getting ready…', bytes: 0, total: 0 };
   chatError = null;
   rerender();
   try {
     let last = 0;
     let lastAt = 0;
-    await b.loadLocal({
+    await b.downloadLocal(size, {
       onStage: (t) => { chatDownloading.stage = t; rerender(); },
       onProgress: (p, bytes, total) => {
         Object.assign(chatDownloading, { p, bytes, total });
@@ -337,8 +350,8 @@ async function downloadChat(b, setChat, rerender) {
         if (now - lastAt > 250 || p - last > 0.01) { last = p; lastAt = now; rerender(); }
       },
     });
-    await setChat({ localReady: true });
-    toast('Chat model ready');
+    await setChat({ localReady: true, crashNote: null });
+    toast('Downloaded. Tap your valet to chat');
   } catch (e) {
     console.error(e, e?.raw);
     chatError = e?.message || 'Download failed. Try again on Wi-Fi.';
