@@ -65,11 +65,3 @@ test('facts and persona carry what the model needs', () => {
   assert.match(p, /°F/);
 });
 
-test('on-phone brief is short; replies are tidied', async () => {
-  const { localPrompt, tidyReply } = await import('../src/core/advisor.js');
-  const p = localPrompt({ name: 'Barnaby' }, ctx(rainy));
-  assert.match(p, /Barnaby/);
-  assert.match(p, /rain from|rain/);
-  assert.ok(p.length < 900, p.length);
-  assert.equal(tidyReply('Certainly! **Tip:** Wear navy. Keep it pressed. Add a watch. And more.'), 'Tip: Wear navy. Keep it pressed. Add a watch.');
-});

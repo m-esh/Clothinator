@@ -45,7 +45,7 @@ const VOICES = {
     leaderTop: 'The {item} again. A favourite, clearly.',
     weather: { rainAt: 'Umbrella from {time}.', rain: 'Wet one. Umbrella.', windy: 'Windy. Hold onto your hat.', swing: 'Cold morning, warmer afternoon. Layers.', dry: 'Dry all day.' },
     tips: ['Match the belt to the shoes and nobody notices. Which is the point.', 'One loud piece at a time. Let it do the talking.', 'If in doubt, navy.', 'Roll the sleeves twice, not three times.'],
-    chat: { intro: 'Ask me anything. Jackets, rain, what to wash.', yes: 'Yes.', no: 'No.', offTopic: 'Weather and wardrobe I can do. For the rest, set me up properly in Settings.' },
+    chat: { intro: 'Ask away. Does something go with this, what to wear for an occasion, the weather.', yes: 'Yes.', no: 'No.', maybe: 'Mostly.', hello: 'Hello there. What are we deciding?', thanks: 'Any time.', howAreYou: 'Very well, thank you. Better once you’re dressed.', praise: 'Steady on. But thank you.', help: 'Ask if something goes with your outfit, what goes with a piece, what to wear for an occasion, or about the weather and laundry.', offTopic: 'I’m a valet, not an encyclopaedia. Clothes, occasions, weather: those I can do.', jokes: ['Why did the belt get arrested? It held up a pair of trousers.', 'Corduroy pillows are making headlines.', 'I told my socks a secret. They’ve been holding it in ever since.'] },
     hello: 'At your service.',
   },
   bulldog: {
@@ -85,7 +85,7 @@ const VOICES = {
     leaderTop: '{Item}. Most worn. No surprise.',
     weather: { rainAt: 'Rain from {time}. Umbrella.', rain: 'Rain. Umbrella.', windy: 'Windy. Button up.', swing: 'Cold start, warm finish. Layer.', dry: 'Dry.' },
     tips: ['Shoes polished. Always.', 'Fit first. Everything else second.', 'Belt matches shoes. Non-negotiable.', 'Sit down in it before you leave.'],
-    chat: { intro: 'Well? Ask.', yes: 'Yes.', no: 'No.', offTopic: 'Weather and clothes. That\u2019s my lot until you set up chat in Settings.' },
+    chat: { intro: 'Well? Ask.', yes: 'Yes.', no: 'No.', maybe: 'Passable.', hello: 'Hm. Morning. What do you need?', thanks: 'Mm.', howAreYou: 'Fine. You?', praise: 'Hmph. Kind of you.', help: 'Ask if something goes, what to wear for a do, or the weather. Keep it short.', offTopic: 'Not my department. Clothes and weather.', jokes: ['A belt walked into a bar. It held up the queue.', 'Cargo trousers. Plenty of pockets, no excuses.'] },
     hello: 'Reporting for duty.',
   },
   corgi: {
@@ -125,7 +125,7 @@ const VOICES = {
     leaderTop: 'The {item}! Your absolute favourite.',
     weather: { rainAt: 'Rain from {time}. Brolly!', rain: 'Rainy one. Brolly!', windy: 'Windy! Hold onto your cap!', swing: 'Chilly morning, lovely afternoon. Layers!', dry: 'Dry all day!' },
     tips: ['A bit of colour goes a long way!', 'White trainers go with nearly everything.', 'Comfy can still be smart!', 'Tuck the shirt in and you look sharper instantly.'],
-    chat: { intro: 'Ooh, a question? Go on, ask me anything!', yes: 'Yes!', no: 'Nope!', offTopic: 'I only know weather and wardrobe for now! Set up chat in Settings and I\u2019ll know loads more.' },
+    chat: { intro: 'Ooh, a question? Go on, ask me anything about your clothes!', yes: 'Yes!', no: 'Nope!', maybe: 'Ooh, almost!', hello: 'Hello hello! What are we wearing?', thanks: 'Happy to help!', howAreYou: 'Brilliant, thanks! Even better if we pick something smart!', praise: 'Aw, stop it! (Don’t stop.)', help: 'Ask me if something goes with your outfit, what to wear somewhere, what goes with a piece, or the weather!', offTopic: 'Ooh, no idea! But ask me about clothes, places you’re going, or the weather!', jokes: ['What did the sock say to the shoe? I’m feeling a bit down at heel!', 'Why do corgis make good valets? We’re always at your feet!', 'Why did the scarf win? It was a neck-and-neck race!'] },
     hello: 'Hello there!',
   },
   valet: {
@@ -165,7 +165,7 @@ const VOICES = {
     leaderTop: 'The {item} remains your most faithful companion.',
     weather: { rainAt: 'Rain from {time}. An umbrella is advised.', rain: 'Rain is expected. An umbrella is advised.', windy: 'It will be blustery. A firm hat, or none at all.', swing: 'A cold start and a mild afternoon. Layers, I think.', dry: 'Dry throughout.' },
     tips: ['The belt should match the shoes.', 'A pocket square need not match the tie. It should merely get along with it.', 'Navy and grey are never wrong.', 'Trousers should just touch the shoe.'],
-    chat: { intro: 'How may I be of assistance?', yes: 'Indeed.', no: 'I think not.', offTopic: 'I\u2019m afraid I\u2019m confined to the weather and your wardrobe until chat is set up in Settings.' },
+    chat: { intro: 'How may I be of assistance?', yes: 'Indeed.', no: 'I think not.', maybe: 'Acceptable, though not ideal.', hello: 'Good day. How may I help?', thanks: 'Not at all.', howAreYou: 'Very well, thank you for asking.', praise: 'Most kind.', help: 'I can advise whether a piece suits your outfit, what to wear for an occasion, what pairs with a garment, and the weather.', offTopic: 'I fear that lies outside my remit. Your wardrobe, your engagements and the weather, however, are at your disposal.', jokes: ['A gentleman never runs out of ties. He merely runs out of occasions.', 'One should match the belt to the shoes. The trousers will take care of themselves.'] },
     hello: 'At your service.',
   },
 };

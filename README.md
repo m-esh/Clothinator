@@ -5,7 +5,7 @@ outfit that suits today's weather, isn't a repeat of last week, and doesn't
 make any of the classic mistakes. Tap **Wear this** and you're done.
 
 Built for one person and one iPhone. Free, no account, and nothing leaves the
-phone (unless you give the valet a Claude key for chat). See [SPEC.md](SPEC.md) for the decisions behind it.
+phone (unless you give the valet an optional Claude key for chat). See [SPEC.md](SPEC.md) for the decisions behind it.
 
 ## Put it on your iPhone
 
@@ -105,30 +105,33 @@ the launch intro, and blink now and then. Portraits are in `src/mascot-art.js`, 
 
 ### Chat with your valet
 
-Tap the valet anywhere to open a chat, starting from what they just said.
-Ask "Do I need a jacket?", "Will it rain?", "What should I wash?" or
-anything else. They answer in character, using today's weather, the outfit
-on show, your closet, the laundry and the last week of wear. Pick who answers
-in **Settings → Chat**:
+Tap the valet anywhere to open a chat. The answers are worked out by Clad's
+own outfit engine, from your real closet, so they're accurate, free,
+private, instant and work offline. There's no AI model involved. The valet
+understands questions like:
 
-- **On the phone** (free, private): a small model downloaded once over
-  Wi-Fi. **Standard** is SmolLM2 360M (273–365 MB); **Lite** is SmolLM2 135M
-  (118–137 MB, simpler answers). It runs on the graphics chip when the phone
-  supports 16-bit WebGPU, otherwise on the processor. The download is saved
-  in pieces and resumes if interrupted. iOS closes a web app that uses too
-  much memory, which can happen while a model loads; if it does, the app
-  notices on the next start, steps down to Lite, and if Lite is too much as
-  well, switches the on-phone model off and says so. (An earlier version used
-  Qwen2.5 0.5B, which needed about 3 GB to load; its files are deleted.)
-  Weather and wardrobe questions are answered straight from the app's own
-  numbers, so those stay accurate; the model handles the rest.
-- **Claude** (smarter, needs internet): paste an Anthropic API key from
-  console.anthropic.com. It's stored only on the phone and left out of
-  backups. Each message costs a little (Opus 5.5 about a cent, Haiku 5.5 far
-  less), so set a spend limit on the key. Your question, the weather and your
-  closet list go to Anthropic; photos never do.
-- **Auto** uses Claude when a key is saved, otherwise the on-phone model.
-  With neither, weather and wardrobe questions still get answers.
+- "Does a black bomber go with this?" (also for pieces you don't own yet)
+  and "a black one?" straight after
+- "Can I wear my white trainers with this?", "Do jeans go with a blazer?"
+- "What shoes go with my navy chinos?", "What goes with the black jeans?"
+- "What should I wear to the gym / a date / an interview?", "Is this OK for
+  a wedding?"
+- "Make it fancier", "Something more casual"
+- "Do I need a jacket?", "Will it rain?", "What should I wash?"
+- "Hello", "Thanks", "Tell me a joke"
+
+Each answer says why ("too casual for a fancy day", "all neutrals, nothing
+to clash") and suggests a better piece from your closet when there is one.
+Anything else gets a polite in-character "not my department".
+
+**Optional:** paste a Claude API key in Settings → Chat for open-ended chat
+(it costs a little per message, and your question, the weather and your
+closet list go to Anthropic; photos never do).
+
+An earlier version tried a small AI model running on the phone. Any model
+small enough to fit in the memory iOS allows a web app gave poor answers,
+and the larger ones crashed the app, so it was removed, and its files are
+deleted from the phone.
 
 The Anthropic SDK is bundled in `vendor/` (Apache-2.0).
 

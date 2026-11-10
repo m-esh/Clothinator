@@ -1,21 +1,21 @@
-// Chat with your valet. Tap them anywhere and this opens: ask about the
-// weather, whether you need a jacket, what to wash, or anything else.
+// Chat with your valet. Tap them anywhere and this opens: ask whether
+// something goes with your outfit, what to wear somewhere, what goes with a
+// piece, the weather, the laundry.
 //
 // Who answers:
-//   - Claude, when you've added an API key in Settings (and chosen it).
-//   - Otherwise the on-phone model, once it's downloaded.
-//   - Questions about the weather and your clothes are answered straight from
-//     the app's own data when no AI is set up, or when the on-phone model is
-//     in use (so it's always accurate on what matters most).
+//   - Built in (free, offline): answers worked out by the outfit engine
+//     itself, from your real closet and its rules. See core/ask.js.
+//   - Claude, if you've added an API key in Settings (optional).
 
 import { h, sheet } from './dom.js';
 import * as store from '../data/store.js';
 import { state } from '../data/store.js';
 import * as valet from './mascot.js';
-import { facts, persona, quickAnswer, intentOf, localPrompt, tidyReply } from '../core/advisor.js';
+import { facts, persona } from '../core/advisor.js';
+import { ask } from '../core/ask.js';
 import { isoDate } from '../core/week.js';
 
-const SUGGESTIONS = ['Do I need a jacket?', 'What’s the weather like?', 'Will it rain?', 'What should I wash?'];
+const SUGGESTIONS = ['Do I need a jacket?', 'Will it rain?', 'What should I wear to dinner?', 'Make it more casual', 'What should I wash?'];
 
 // Today's screen tells us what's going on (weather, the outfit on show).
 let contextOf = () => ({});
@@ -28,41 +28,32 @@ export function chatContext() {
     unit: state.prefs.unit,
     items: state.items,
     wears: state.wears,
+    prefs: state.prefs,
+    model: state.model,
+    saved: state.outfits,
     ...c,
   };
 }
 
-// If the app was closed while the on-phone model was loading, iOS ran out
-// of memory. Step down to the Lite model; if Lite did it too, switch the
-// on-phone model off. Never let it crash twice the same way.
-export async function recoverFromCrash() {
-  const b = await import('../ai/brain.js');
-  const size = b.crashedWhileLoading();
-  if (!size) return null;
-  const c = state.prefs.chat || {};
-  if (size === 'standard') {
-    await b.removeLocal('standard');
-    await store.updatePrefs({ chat: { ...c, localSize: 'lite', localReady: false, crashNote: 'Your phone ran out of memory starting the Standard model, so it was removed. Try the Lite one: it\u2019s smaller.' } });
-  } else {
-    await b.removeLocal('lite');
-    await store.updatePrefs({ chat: { ...c, localReady: false, localOff: true, crashNote: 'Your phone ran out of memory starting the on-phone model, so it\u2019s been switched off. Claude (with an API key) works instead.' } });
-  }
-  return size;
+// An earlier version downloaded a chat model to the phone (too big for
+// iOS: it crashed). Free that space once.
+let cleaned = false;
+function cleanupOldModels() {
+  if (cleaned) return;
+  cleaned = true;
+  try { indexedDB.deleteDatabase('clad-models'); } catch { /* nothing to remove */ }
+  try { localStorage.removeItem('clad.modelLoading'); } catch { /* private mode */ }
+  caches.open('transformers-cache').then(async (c) => {
+    for (const r of await c.keys()) if (/Qwen2\.5|SmolLM2/.test(r.url)) await c.delete(r);
+  }).catch(() => {});
 }
 
-// Which brain answers: 'claude' | 'local' | 'quick'.
+// Which brain answers: 'claude' (with a key) or 'valet' (built in).
 export async function brainFor(prefs = state.prefs) {
-  await recoverFromCrash();
+  cleanupOldModels();
   const pref = prefs.chat?.brain || 'auto';
-  const key = await claudeKey();
-  if (pref !== 'local' && key) return 'claude';
-  if (pref !== 'claude' && prefs.chat?.localReady && !prefs.chat?.localOff) {
-    // Check it's really there (an older model may have been marked ready).
-    const b = await import('../ai/brain.js');
-    if (await b.localCached(prefs.chat.localSize || 'standard')) return 'local';
-    await store.updatePrefs({ chat: { ...prefs.chat, localReady: false } });
-  }
-  return 'quick';
+  if (pref !== 'valet' && (await claudeKey())) return 'claude';
+  return 'valet';
 }
 
 export const claudeKey = async () => (await store.getKV('claudeKey')) || '';
@@ -97,7 +88,7 @@ export async function openChat({ opening } = {}) {
       render();
       scrollDown();
       try {
-        const reply = await answer(q, log, brain, m, (t) => { busy.text = t; busy.stage = null; schedule(); }, (c) => { controller = c; }, (st) => { busy.stage = st; schedule(); });
+        const reply = await answer(q, log, brain, m, (t) => { busy.text = t; schedule(); }, (c) => { controller = c; });
         log.push({ from: 'valet', text: reply });
       } catch (e) {
         log.push({ from: 'valet', text: e.message || 'Something went wrong.', error: true });
@@ -123,7 +114,7 @@ export async function openChat({ opening } = {}) {
       h('div', { class: 'chat-log', 'aria-live': 'polite' },
         log.length ? null : bubble('valet', m.voice.chat?.intro || m.voice.hello, m),
         log.map((x, i) => bubble(x.from, x.text, m, { key: `${i}`, error: x.error })),
-        busy ? bubble('valet', busy.text || '', m, { key: 'busy', typing: !busy.text, stage: busy.stage }) : null),
+        busy ? bubble('valet', busy.text || '', m, { key: 'busy', typing: !busy.text }) : null),
       asked || busy ? null : h('div', { class: 'chat-chips' },
         SUGGESTIONS.map((s) => h('button', { class: 'chip', onclick: () => send(s) }, s))),
       h('div', { class: 'chat-input' },
@@ -144,14 +135,13 @@ function brainLabel(brain) {
     const id = state.prefs.chat?.model;
     return `Claude${id?.includes('haiku') ? ' Haiku' : ' Opus'} · via your API key`;
   }
-  if (brain === 'local') return 'On-phone model · private';
-  return h('span', null, 'Weather and wardrobe answers only. ', h('a', { class: 'link tiny', href: '#settings' }, 'Set up chat'));
+  return 'Built in · free, works offline';
 }
 
-function bubble(from, text, m, { key, error, typing, stage } = {}) {
+function bubble(from, text, m, { key, error, typing } = {}) {
   return h('div', { key, class: `chat-msg ${from}${error ? ' error' : ''}` },
     from === 'valet' ? valet.avatar(m.key, 28) : null,
-    h('p', null, typing ? h('span', { class: 'typing', 'aria-label': `${m.name} is typing` }, h('i'), h('i'), h('i'), stage ? h('small', null, stage) : null) : text));
+    h('p', null, typing ? h('span', { class: 'typing', 'aria-label': `${m.name} is typing` }, h('i'), h('i'), h('i')) : text));
 }
 
 function scrollDown() {
@@ -163,17 +153,15 @@ function scrollDown() {
 
 // ── answering ──────────────────────────────────────────────
 
-async function answer(q, log, brain, m, onText, setController, onStage) {
+async function answer(q, log, brain, m, onText, setController) {
   const ctx = chatContext();
   const v = m.voice;
-  // Weather and wardrobe questions: the app's own numbers beat a small model.
   if (brain !== 'claude') {
-    // ("What should I wear" with nothing picked yet is better left to the model.)
-    const quick = brain === 'local' && intentOf(q) === 'wear' && !ctx.outfit ? null : quickAnswer(q, ctx, v);
-    if (quick) { await pause(350); return quick; }
-    if (brain === 'quick') {
-      return intentOf(q) ? quick : (v.chat?.offTopic || 'I can tell you about the weather, your outfit and the laundry. For anything else, set up chat in Settings.');
-    }
+    // Earlier questions, so "a black one" knows what "one" is.
+    const history = log.filter((x) => x.from === 'me').map((x) => x.text).slice(0, -1);
+    const reply = ask(q, { ...ctx, history }, v, m);
+    await pause(300 + Math.min(500, reply.length * 4)); // a moment to "think"
+    return reply;
   }
   const system = `${persona(m, ctx.unit)}\n\nFacts:\n${facts(ctx)}`;
   // Alternate user/assistant, starting with the user, ending with this question.
@@ -186,18 +174,9 @@ async function answer(q, log, brain, m, onText, setController, onStage) {
     else msgs.push({ role, content: x.text });
   }
   const brainMod = await import('../ai/brain.js');
-  if (brain === 'claude') {
-    const c = new AbortController();
-    setController(c);
-    return brainMod.askClaude({ key: await claudeKey(), model: state.prefs.chat?.model, system, messages: msgs, onText, signal: c.signal });
-  }
-  return tidyReply(await brainMod.askLocal({
-    size: state.prefs.chat?.localSize || 'standard',
-    system: localPrompt(m, ctx),
-    messages: msgs,
-    onText: (t) => onText(tidyReply(t)),
-    onStage: (st) => onStage?.(st === 'Starting it up…' ? 'waking up, the first answer takes a moment' : null),
-  }));
+  const c = new AbortController();
+  setController(c);
+  return brainMod.askClaude({ key: await claudeKey(), model: state.prefs.chat?.model, system, messages: msgs, onText, signal: c.signal });
 }
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
