@@ -3,7 +3,7 @@
 // library itself. Weather always goes to the network (the app keeps its own
 // last-known copy).
 
-const VERSION = 'v38';
+const VERSION = 'v39';
 const SHELL = `clothinator-shell-${VERSION}`;
 const RUNTIME = 'clothinator-runtime';
 

@@ -29,47 +29,38 @@ export function renderSettings(root, rerender) {
   root.append(h('div', { class: 'page-head' }, h('h1', null, 'Settings')));
 
   // ── look ──
-  root.append(h('section', null,
-    h('div', { class: 'label', style: { marginBottom: '10px' } }, 'Colour scheme'),
-    h('div', { class: 'palettes', role: 'group', 'aria-label': 'Colour scheme' },
-      PALETTES.map((pal) => h('button', {
-        key: pal.key,
-        class: 'palette',
-        style: { background: pal.bg },
-        'aria-pressed': String((p.palette || 'graphite') === pal.key),
-        onclick: () => store.updatePrefs({ palette: pal.key }),
-      },
-      h('span', { class: 'dots' }, pal.dots.map((c) => h('i', { style: { background: c } }))),
-      h('b', { style: { color: '#f0f0f2' } }, pal.label)))),
-  ));
-
-  // ── valet ──
+  const pal = PALETTES.find((x) => x.key === (p.palette || 'graphite')) || PALETTES[0];
   const chosen = p.mascot ?? 'fox';
   root.append(h('section', null,
-    h('div', { class: 'label' }, 'Your valet'),
-    h('div', { class: 'valets', role: 'group', 'aria-label': 'Your valet' },
-      valet.MASCOT_KEYS.map((k) => h('button', {
-        key: k, class: 'valet-pick', 'aria-pressed': String(chosen === k),
-        onclick: () => store.updatePrefs({ mascot: k }),
-      }, valet.avatar(k, 56), h('b', null, valet.art(k).name), h('span', null, valet.art(k).kind))),
-      h('button', { key: 'none', class: 'valet-pick none', 'aria-pressed': String(chosen === 'none'), onclick: () => store.updatePrefs({ mascot: 'none' }) },
-        h('span', { class: 'valet-avatar off', style: { width: '56px', height: '56px' } }, 'Off'), h('b', null, 'No valet'), h('span', null, 'Just the app'))),
-    chosen !== 'none' && valet.art(chosen) ? h('div', { style: { marginTop: '12px' } },
-      valet.says([valet.voice(chosen).hello, valet.art(chosen).blurb], { key: chosen })) : null,
-  ));
-
-  // ── chat ──
-  if (chosen !== 'none') renderChat(root, rerender);
+    h('ul', { class: 'list' },
+      h('li', null,
+        h('div', { class: 'main' }, h('div', null, 'Colour'), h('div', { class: 'tiny' }, pal.label)),
+        h('div', { class: 'swatches', role: 'group', 'aria-label': 'Colour scheme' },
+          PALETTES.map((x) => h('button', {
+            key: x.key, class: 'swatch', 'aria-label': x.label, 'aria-pressed': String(pal.key === x.key),
+            style: { background: x.bg, '--dot': x.dots[0] },
+            onclick: () => store.updatePrefs({ palette: x.key }),
+          })))),
+      h('li', null,
+        h('div', { class: 'main' }, h('div', null, 'Valet'), h('div', { class: 'tiny' }, chosen === 'none' ? 'Off' : valet.art(chosen)?.name)),
+        h('div', { class: 'swatches', role: 'group', 'aria-label': 'Your valet' },
+          valet.MASCOT_KEYS.map((k) => h('button', {
+            key: k, class: 'swatch face', 'aria-label': valet.art(k).name, 'aria-pressed': String(chosen === k),
+            onclick: () => store.updatePrefs({ mascot: k }),
+          }, valet.avatar(k, 34))),
+          h('button', { key: 'none', class: 'swatch off', 'aria-label': 'No valet', 'aria-pressed': String(chosen === 'none'), onclick: () => store.updatePrefs({ mascot: 'none' }) }, 'Off'))),
+      chosen !== 'none' ? chatRows(rerender) : null,
+    )));
 
   // ── weather ──
   root.append(h('section', null,
-    h('div', { class: 'label', style: { marginBottom: '8px' } }, 'Weather'),
+    h('div', { class: 'label' }, 'Weather'),
     h('ul', { class: 'list' },
       h('li', null,
-        h('div', { class: 'main' }, h('div', null, 'Location'), h('div', { class: 'tiny faint' }, p.location ? p.location.name : 'This phone\'s location')),
+        h('div', { class: 'main' }, h('div', null, 'Location'), h('div', { class: 'tiny' }, p.location ? p.location.name : 'This phone\'s location')),
         p.location
-          ? h('button', { class: 'btn ghost small', onclick: async () => { await store.updatePrefs({ location: null }); invalidateWeather(); } }, 'Use my location')
-          : h('button', { class: 'btn ghost small', onclick: () => citySheet() }, 'Pick a city')),
+          ? h('button', { class: 'link small', onclick: async () => { await store.updatePrefs({ location: null }); invalidateWeather(); } }, 'Use mine')
+          : h('button', { class: 'link small', onclick: () => citySheet() }, 'Pick a city')),
       h('li', null,
         h('div', { class: 'main' }, 'Your day'),
         h('div', { class: 'row' },
@@ -78,100 +69,87 @@ export function renderSettings(root, rerender) {
           hourSelect(p.to, (v) => { store.updatePrefs({ to: v, from: Math.min(v - 1, p.from) }); invalidateWeather(); }))),
       h('li', null,
         h('div', { class: 'main' }, 'Units'),
-        h('div', { class: 'seg quiet', style: { width: '120px' } },
+        h('div', { class: 'seg quiet', style: { width: '110px' } },
           ['C', 'F'].map((u) => h('button', { 'aria-pressed': String(p.unit === u), onclick: () => store.updatePrefs({ unit: u }) }, `°${u}`)))),
     )));
 
-  // ── preferences ──
+  // ── outfits ──
   const pairs = p.neverPairs.map(([a, b]) => [store.itemById(a), store.itemById(b)]).filter(([a, b]) => a && b);
   const blocked = state.items.filter((i) => i.blocked);
   const favs = state.items.filter((i) => i.favorite);
-  const names = (list) => (list.length ? list.map(displayName).join(', ') : 'None');
-  root.append(h('section', null,
-    h('div', { class: 'label' }, 'Preferences'),
-    h('ul', { class: 'list' },
-      h('li', null,
-        h('div', { class: 'main' }, h('div', null, 'Never together'), h('div', { class: 'tiny' }, pairs.length ? `${pairs.length} pair${pairs.length === 1 ? '' : 's'}` : 'None')),
-        h('button', { class: 'link', onclick: () => pairSheet() }, 'Add')),
-      pairs.map(([a, b], idx) => h('li', { key: `${a.id}|${b.id}` },
-        h('div', { class: 'thumb' }, itemPic(a)), h('div', { class: 'thumb' }, itemPic(b)),
-        h('div', { class: 'main small' }, `${displayName(a)} + ${displayName(b)}`),
-        h('button', { class: 'link small danger', onclick: () => store.updatePrefs({ neverPairs: p.neverPairs.filter((_, j) => j !== idx) }) }, 'Remove'))),
-      h('li', null, h('div', { class: 'main' }, h('div', null, 'Favourites'), h('div', { class: 'tiny' }, names(favs)))),
-      h('li', null, h('div', { class: 'main' }, h('div', null, 'Never suggested'), h('div', { class: 'tiny' }, names(blocked)))),
-      h('li', null,
-        h('div', { class: 'main' }, h('div', null, 'Learned taste'), h('div', { class: 'tiny num' }, `From ${state.model.n} choice${state.model.n === 1 ? '' : 's'}`)),
-        state.model.n ? h('button', { class: 'link danger', onclick: () => confirmSheet('Forget learned taste?', 'Suggestions go back to rules only. Your closet, outfits and wear counts stay.', 'Forget', () => store.resetTaste(), { danger: true }) }, 'Reset') : null),
-    ),
-    h('p', { class: 'tiny faint', style: { padding: '0 16px', marginTop: '7px' } }, 'Set favourites and hidden items on each item\'s page.'),
-  ));
-
-  // ── hair ──
   const hair = p.hair || { on: false, styles: null };
   const styles = hair.styles || DEFAULT_STYLES;
   const setHair = (patch) => store.updatePrefs({ hair: { ...hair, styles, ...patch } });
   root.append(h('section', null,
-    h('div', { class: 'label' }, 'Hair'),
+    h('div', { class: 'label' }, 'Outfits'),
     h('ul', { class: 'list' },
       h('li', null,
-        h('div', { class: 'main' }, h('div', null, 'Include a hairstyle'), h('div', { class: 'tiny' }, 'Suggested with each outfit')),
-        toggle(hair.on, (v) => setHair({ on: v }), 'Include a hairstyle')),
+        h('div', { class: 'main' }, h('div', null, 'Never together'), h('div', { class: 'tiny' }, pairs.length ? `${pairs.length} pair${pairs.length === 1 ? '' : 's'}` : 'None')),
+        h('button', { class: 'link small', onclick: () => pairSheet() }, 'Add')),
+      pairs.map(([a, b], idx) => h('li', { key: `${a.id}|${b.id}` },
+        h('div', { class: 'thumb' }, itemPic(a)), h('div', { class: 'thumb' }, itemPic(b)),
+        h('div', { class: 'main small' }, `${displayName(a)} + ${displayName(b)}`),
+        h('button', { class: 'link small danger', onclick: () => store.updatePrefs({ neverPairs: p.neverPairs.filter((_, j) => j !== idx) }) }, 'Remove'))),
+      favs.length ? h('li', null, h('div', { class: 'main' }, h('div', null, 'Favourites'), h('div', { class: 'tiny' }, favs.map(displayName).join(', ')))) : null,
+      blocked.length ? h('li', null, h('div', { class: 'main' }, h('div', null, 'Never suggested'), h('div', { class: 'tiny' }, blocked.map(displayName).join(', ')))) : null,
+      h('li', null,
+        h('div', { class: 'main' }, h('div', null, 'Suggest a hairstyle')),
+        toggle(hair.on, (v) => setHair({ on: v }), 'Suggest a hairstyle')),
       hair.on ? styles.map((st) => h('li', { key: st.id },
         h('div', { class: 'main' },
           h('div', null, st.name),
           h('div', { class: 'tiny' }, [st.modes.map((m) => m[0].toUpperCase() + m.slice(1)).join(', '), st.weatherProof ? 'holds up in wind and rain' : null].filter(Boolean).join(' · '))),
         h('button', { class: 'link small danger', onclick: () => setHair({ styles: styles.filter((x) => x.id !== st.id) }) }, 'Remove'))) : null,
-      hair.on ? h('li', null, h('button', { class: 'link', onclick: () => hairSheet(styles, setHair) }, 'Add a hairstyle')) : null,
-    ),
-  ));
+      hair.on ? h('li', null, h('button', { class: 'link small', onclick: () => hairSheet(styles, setHair) }, 'Add a hairstyle')) : null,
+      h('li', null,
+        h('div', { class: 'main' }, h('div', null, 'Learned taste'), h('div', { class: 'tiny num' }, `From ${state.model.n} choice${state.model.n === 1 ? '' : 's'}`)),
+        state.model.n ? h('button', { class: 'link small danger', onclick: () => confirmSheet('Forget learned taste?', 'Suggestions go back to rules only. Your closet, outfits and wear counts stay.', 'Forget', () => store.resetTaste(), { danger: true }) }, 'Reset') : null),
+    )));
 
-  // ── models ──
+  // ── data ──
   const both = models.background && models.classify;
+  const some = models.background || models.classify;
   root.append(h('section', null,
-    h('div', { class: 'label', style: { marginBottom: '8px' } }, 'On-phone AI'),
-    h('p', { class: 'small muted', style: { marginTop: 0 } }, 'Runs on this phone, free. One-time download, about 135 MB.'),
-    models.checking ? h('p', { class: 'small faint' }, 'Checking…') : h('ul', { class: 'list' },
-      h('li', null, h('div', { class: 'main' }, 'Background removal'), h('span', { class: 'small faint' }, models.background ? 'Downloaded' : 'Not yet')),
-      h('li', null, h('div', { class: 'main' }, 'Clothing recognition'), h('span', { class: 'small faint' }, models.classify ? 'Downloaded' : 'Not yet'))),
-    downloading ? h('div', null, h('div', { class: 'small muted', style: { marginTop: '12px' } }, `Downloading ${Math.round(downloading.p * 100)}%`), h('div', { class: 'progress' }, h('div', { style: { width: `${Math.round(downloading.p * 100)}%` } })))
-      : h('div', { class: 'row', style: { marginTop: '12px' } },
-        !both && !models.checking ? h('button', { class: 'btn ghost small', onclick: () => download(rerender) }, 'Download now (use Wi-Fi)') : null,
-        (models.background || models.classify) ? h('button', { class: 'link small', onclick: async () => {
-          const m = await import('../vision/ai.js');
-          await m.clearModels();
-          models = null;
-          rerender();
-          toast('Models removed');
-        } }, 'Remove models') : null),
-  ));
+    h('div', { class: 'label' }, 'Data'),
+    h('ul', { class: 'list' },
+      h('li', null,
+        h('div', { class: 'main' },
+          h('div', null, 'Photo AI'),
+          h('div', { class: 'tiny num' }, models.checking ? 'Checking…' : downloading ? `Downloading ${Math.round(downloading.p * 100)}%` : both ? 'Downloaded · works offline' : '135 MB, for reading photos')),
+        downloading || models.checking ? null
+          : both ? h('button', { class: 'link small danger', onclick: async () => {
+            const m = await import('../vision/ai.js');
+            await m.clearModels();
+            models = null;
+            rerender();
+            toast('Photo AI removed');
+          } }, 'Remove')
+          : h('button', { class: 'link small', onclick: () => download(rerender) }, some ? 'Finish' : 'Download')),
+      downloading ? h('li', null, h('div', { class: 'progress', style: { flex: 1 } }, h('div', { style: { width: `${Math.round(downloading.p * 100)}%` } }))) : null,
+      h('li', null,
+        h('div', { class: 'main' },
+          h('div', null, 'Backup'),
+          h('div', { class: 'tiny' }, p.lastBackupAt ? `Last ${new Date(p.lastBackupAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}` : 'Never')),
+        h('div', { class: 'row' },
+          h('label', { class: 'link small file-btn' }, 'Restore',
+            h('input', { type: 'file', accept: 'application/json,.json', onchange: (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file) return;
+              confirmSheet('Restore this backup?', 'Everything currently in the app is replaced by the backup.', 'Restore', async () => {
+                try {
+                  const r = await importBackup(file);
+                  invalidateWeather();
+                  toast(`Restored ${r.items} pieces`);
+                } catch (err) {
+                  toast(err.message);
+                }
+              }, { danger: true });
+            } })),
+          h('button', { class: 'btn small', onclick: async () => { if (await exportBackup()) toast('Backup saved'); } }, 'Save'))),
+    )));
 
-  // ── backup ──
-  root.append(h('section', null,
-    h('div', { class: 'label', style: { marginBottom: '8px' } }, 'Backup'),
-    h('p', { class: 'small muted', style: { marginTop: 0 } },
-      p.lastBackupAt ? `Last backup ${new Date(p.lastBackupAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}.` : 'No backup yet.',
-      ' Save it to iCloud Drive.'),
-    h('div', { class: 'row wrap' },
-      h('button', { class: 'btn small', onclick: async () => { if (await exportBackup()) toast('Backup saved'); } }, 'Save a backup'),
-      h('label', { class: 'btn ghost small file-btn' }, 'Restore',
-        h('input', { type: 'file', accept: 'application/json,.json', onchange: (e) => {
-          const file = e.target.files?.[0];
-          e.target.value = '';
-          if (!file) return;
-          confirmSheet('Restore this backup?', 'Everything currently in the app is replaced by the backup.', 'Restore', async () => {
-            try {
-              const r = await importBackup(file);
-              invalidateWeather();
-              toast(`Restored ${r.items} pieces`);
-            } catch (err) {
-              toast(err.message);
-            }
-          }, { danger: true });
-        } }))),
-  ));
-
-  root.append(h('p', { class: 'tiny faint', style: { marginTop: '36px' } },
-    `Clad 1.0 · weather by Open-Meteo · ${chatInfo?.key ? 'chat goes to Anthropic, everything else stays on this phone' : 'everything stays on this phone'}`));
+  root.append(h('p', { class: 'tiny faint settings-foot' }, 'Clad 1.0 · weather by Open-Meteo'));
 }
 
 function hourSelect(value, onChange) {
@@ -260,43 +238,33 @@ function hairSheet(styles, setHair) {
   ));
 }
 
-// ── valet chat ─────────────────────────────────────────────
+// ── valet chat: the optional Claude key, as rows in the Look list ──
 
-function renderChat(root, rerender) {
+function chatRows(rerender) {
   const c = state.prefs.chat || {};
   const setChat = (patch) => store.updatePrefs({ chat: { ...c, ...patch } });
   if (!chatInfo) {
     chatInfo = { checking: true };
     Promise.all([claudeKey(), import('../ai/brain.js')]).then(([key, b]) => { chatInfo = { key, b }; rerender(); });
   }
-  if (chatInfo.checking) return;
+  if (chatInfo.checking) return null;
   const { key, b } = chatInfo;
-  const useClaude = key && (c.brain || 'auto') !== 'valet';
+  const useClaude = !!key && (c.brain || 'auto') !== 'valet';
   const model = c.model || b.DEFAULT_CLAUDE;
-  const name = valet.current()?.name || 'your valet';
-
-  root.append(h('section', null,
-    h('div', { class: 'label', style: { marginBottom: '8px' } }, 'Chat'),
-    h('p', { class: 'small muted', style: { marginTop: 0 } },
-      `Tap ${name} to chat. `, useClaude ? 'Claude answers, using your key.' : 'Answers come from Clad’s own outfit rules and your closet: free, private, and they work offline.'),
-    h('ul', { class: 'list' },
-      key ? h('li', null,
-        h('div', { class: 'main' }, 'Who answers'),
-        h('div', { class: 'seg quiet', style: { width: '170px' } },
-          [['valet', 'Built in'], ['auto', 'Claude']].map(([k, l]) => h('button', { 'aria-pressed': String((k === 'valet') === !useClaude), onclick: () => setChat({ brain: k }) }, l)))) : null,
-      h('li', null,
-        h('div', { class: 'main' },
-          h('div', null, 'Claude API key (optional)'),
-          h('div', { class: 'tiny' }, key ? `Saved on this phone · …${key.slice(-4)}` : 'For open-ended chat. Costs a little per message.')),
-        key ? h('button', { class: 'link small danger', onclick: async () => { await setClaudeKey(''); chatInfo = null; rerender(); toast('Key removed'); } }, 'Remove')
-          : h('button', { class: 'btn ghost small', onclick: () => keySheet(() => { chatInfo = null; rerender(); }) }, 'Add')),
-      useClaude ? h('li', null,
-        h('div', { class: 'main' }, h('div', null, 'Claude model'), h('div', { class: 'tiny' }, b.CLAUDE_MODELS.find((x) => x.id === model)?.note || '')),
-        h('div', { class: 'seg quiet', style: { width: '150px' } },
-          b.CLAUDE_MODELS.map((x) => h('button', { 'aria-pressed': String(model === x.id), onclick: () => setChat({ model: x.id }) }, x.label.replace('Claude ', '').replace(/ 5\.5$/, ''))))) : null,
-    ),
-    useClaude ? h('p', { class: 'tiny faint', style: { padding: '0 16px', marginTop: '7px' } }, 'With Claude, your question, today\'s weather and your closet list are sent to Anthropic to answer it. Photos are never sent.') : null,
-  ));
+  return [
+    h('li', { key: 'claude' },
+      h('div', { class: 'main' },
+        h('div', null, 'Chat with Claude'),
+        h('div', { class: 'tiny' }, key ? (useClaude ? `Key …${key.slice(-4)} · sends your question to Anthropic` : `Key …${key.slice(-4)} · off`) : 'Optional, needs an API key')),
+      key ? h('div', { class: 'row' },
+        h('button', { class: 'link small danger', onclick: async () => { await setClaudeKey(''); chatInfo = null; rerender(); toast('Key removed'); } }, 'Remove'),
+        toggle(useClaude, (v) => setChat({ brain: v ? 'auto' : 'valet' }), 'Chat with Claude'))
+        : h('button', { class: 'link small', onclick: () => keySheet(() => { chatInfo = null; rerender(); }) }, 'Add key')),
+    useClaude ? h('li', { key: 'claude-model' },
+      h('div', { class: 'main' }, 'Model'),
+      h('div', { class: 'seg quiet', style: { width: '140px' } },
+        b.CLAUDE_MODELS.map((x) => h('button', { 'aria-pressed': String(model === x.id), onclick: () => setChat({ model: x.id }) }, x.label.replace('Claude ', '').replace(/ 5\.5$/, ''))))) : null,
+  ];
 }
 
 function keySheet(done) {
